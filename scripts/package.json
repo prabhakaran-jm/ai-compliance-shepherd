@@ -1,0 +1,21 @@
+{
+  "name": "@compliance-shepherd/scripts",
+  "version": "1.0.0",
+  "description": "Utility scripts for AI Compliance Shepherd",
+  "private": true,
+  "scripts": {
+    "seed-demo": "ts-node seed-demo.ts",
+    "setup-dev": "ts-node setup-dev.ts",
+    "cleanup": "ts-node cleanup.ts",
+    "lint": "eslint . --ext .ts,.js",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.0.0",
+    "aws-sdk": "^2.1500.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  }
+}

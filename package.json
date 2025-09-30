@@ -1,0 +1,46 @@
+{
+  "name": "ai-compliance-shepherd",
+  "version": "1.0.0",
+  "description": "AI-powered compliance assistant for AWS environments",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build:services && npm run build:infra",
+    "build:services": "npm run build --workspaces --if-present",
+    "build:infra": "cd infra/cdk && npm run build",
+    "deploy": "cd infra/cdk && npm run deploy",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint . --ext .ts,.js",
+    "format": "prettier --write .",
+    "seed-demo": "node scripts/seed-demo.js"
+  },
+  "workspaces": [
+    "services/*",
+    "ui/*",
+    "infra/*"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/prabhakaran-jm/ai-compliance-shepherd.git"
+  },
+  "keywords": [
+    "aws",
+    "compliance",
+    "ai",
+    "bedrock",
+    "soc2",
+    "security"
+  ],
+  "author": "Prabhakaran Jayaraman Masani",
+  "license": "Apache License"
+}

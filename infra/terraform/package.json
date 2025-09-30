@@ -1,0 +1,21 @@
+{
+  "name": "@compliance-shepherd/terraform",
+  "version": "1.0.0",
+  "description": "Terraform modules for AI Compliance Shepherd",
+  "private": true,
+  "scripts": {
+    "init": "terraform init",
+    "plan": "terraform plan",
+    "apply": "terraform apply",
+    "destroy": "terraform destroy",
+    "validate": "terraform validate",
+    "fmt": "terraform fmt -recursive",
+    "lint": "tflint",
+    "test": "terratest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "aws-sdk": "^2.1500.0"
+  }
+}

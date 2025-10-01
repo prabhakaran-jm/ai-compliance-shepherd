@@ -172,7 +172,7 @@ The system automatically reviews Terraform plans in pull requests and provides c
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+Apache License - see [LICENSE](LICENSE) file for details.
 
 ## Support
 

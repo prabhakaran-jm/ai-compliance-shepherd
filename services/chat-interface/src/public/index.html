@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Compliance Shepherd - Chat Interface</title>
+    <meta name="description" content="Conversational AI interface for cloud compliance management">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Highlight.js for code syntax highlighting -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --primary-color: #0066cc;
+            --secondary-color: #6c757d;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --border-radius: 8px;
+            --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-color);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, var(--primary-color), #004499);
+            color: white;
+            padding: 1rem;
+            box-shadow: var(--box-shadow);
+            z-index: 1000;
+        }
+
+        .chat-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .chat-status {
+            font-size: 0.875rem;
+            opacity: 0.9;
+            margin-top: 0.25rem;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background: white;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-user {
+            text-align: right;
+        }
+
+        .message-agent, .message-system {
+            text-align: left;
+        }
+
+        .message-bubble {
+            display: inline-block;
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            position: relative;
+        }
+
+        .message-user .message-bubble {
+            background: var(--primary-color);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-agent .message-bubble {
+            background: #f1f3f4;
+            color: var(--dark-color);
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-system .message-bubble {
+            background: var(--info-color);
+            color: white;
+            font-size: 0.875rem;
+            text-align: center;
+            max-width: 60%;
+            margin: 0 auto;
+        }
+
+        .message-content {
+            line-height: 1.5;
+        }
+
+        .message-content h1, .message-content h2, .message-content h3 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .message-content h1:first-child, 
+        .message-content h2:first-child, 
+        .message-content h3:first-child {
+            margin-top: 0;
+        }
+
+        .message-content ul, .message-content ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .message-content code {
+            background: rgba(0,0,0,0.1);
+            padding: 0.125rem 0.25rem;
+            border-radius: 3px;
+            font-size: 0.875rem;
+        }
+
+        .message-content pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            margin: 0.5rem 0;
+        }
+
+        .message-content blockquote {
+            border-left: 4px solid var(--primary-color);
+            padding-left: 1rem;
+            margin: 0.5rem 0;
+            font-style: italic;
+        }
+
+        .message-timestamp {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 0.25rem;
+        }
+
+        .message-actions {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .action-item {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid var(--success-color);
+            border-radius: var(--border-radius);
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            font-size: 0.875rem;
+        }
+
+        .action-item .action-name {
+            font-weight: 600;
+            color: var(--success-color);
+        }
+
+        .citations {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            font-size: 0.875rem;
+        }
+
+        .citation {
+            background: rgba(23, 162, 184, 0.1);
+            border: 1px solid var(--info-color);
+            border-radius: var(--border-radius);
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+        }
+
+        .chat-input-container {
+            background: white;
+            border-top: 1px solid #dee2e6;
+            padding: 1rem;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.1);
+        }
+
+        .chat-input {
+            border: 2px solid #e9ecef;
+            border-radius: var(--border-radius);
+            padding: 0.75rem;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+            resize: none;
+            min-height: 60px;
+            max-height: 120px;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+        }
+
+        .send-button {
+            background: var(--primary-color);
+            border: none;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            transition: background-color 0.2s;
+            cursor: pointer;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: #0056b3;
+        }
+
+        .send-button:disabled {
+            background: var(--secondary-color);
+            cursor: not-allowed;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 0.5rem 1rem;
+            font-style: italic;
+            color: var(--secondary-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .connection-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .connection-status.connected {
+            background: rgba(40, 167, 69, 0.2);
+            color: var(--success-color);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(220, 53, 69, 0.2);
+            color: var(--danger-color);
+        }
+
+        .connection-status.connecting {
+            background: rgba(255, 193, 7, 0.2);
+            color: #856404;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #dee2e6;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid #dee2e6;
+            background: var(--light-color);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .session-item {
+            padding: 0.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .session-item:hover {
+            background: var(--light-color);
+            border-color: #dee2e6;
+        }
+
+        .session-item.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .settings-panel {
+            border-top: 1px solid #dee2e6;
+            padding: 1rem;
+        }
+
+        .toggle-sidebar {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -300px;
+                top: 0;
+                height: 100vh;
+                z-index: 1050;
+                transition: left 0.3s;
+            }
+
+            .sidebar.show {
+                left: 0;
+            }
+
+            .toggle-sidebar {
+                display: inline-block;
+            }
+
+            .message-bubble {
+                max-width: 90%;
+            }
+        }
+
+        .error-message {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 0.75rem;
+            border-radius: var(--border-radius);
+            margin: 1rem 0;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--secondary-color);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid p-0 chat-container">
+        <div class="row g-0 h-100">
+            <!-- Sidebar -->
+            <div class="col-auto sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h5 class="mb-1">Chat Sessions</h5>
+                    <button class="btn btn-sm btn-primary" onclick="startNewSession()">
+                        <i class="fas fa-plus"></i> New Chat
+                    </button>
+                </div>
+                <div class="sidebar-content" id="sessionList">
+                    <!-- Sessions will be populated here -->
+                </div>
+                <div class="settings-panel">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="enableTrace">
+                        <label class="form-check-label" for="enableTrace">
+                            Enable Trace
+                        </label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="autoScroll" checked>
+                        <label class="form-check-label" for="autoScroll">
+                            Auto Scroll
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Chat Area -->
+            <div class="col">
+                <!-- Header -->
+                <div class="chat-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-link text-white p-0 me-3 toggle-sidebar" onclick="toggleSidebar()">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                            <div>
+                                <h1><i class="fas fa-shield-alt me-2"></i>AI Compliance Shepherd</h1>
+                                <div class="chat-status">
+                                    <span class="connection-status" id="connectionStatus">Connecting...</span>
+                                    <span class="ms-2" id="sessionInfo">Ready to help with compliance</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <button class="btn btn-link text-white" onclick="clearCurrentSession()" title="Clear Chat">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                            <button class="btn btn-link text-white" onclick="showHelp()" title="Help">
+                                <i class="fas fa-question-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Messages -->
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message message-system">
+                        <div class="message-bubble">
+                            <div class="message-content">
+                                Welcome to AI Compliance Shepherd! I'm here to help you with cloud compliance management.
+                                <br><br>
+                                You can ask me to:
+                                <ul class="mb-0 mt-2">
+                                    <li>Scan your AWS environment for compliance issues</li>
+                                    <li>Explain compliance frameworks like SOC 2, HIPAA, GDPR</li>
+                                    <li>Generate compliance reports</li>
+                                    <li>Apply fixes to resolve security violations</li>
+                                    <li>Analyze Terraform plans for compliance</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Typing Indicator -->
+                <div class="typing-indicator" id="typingIndicator">
+                    <i class="fas fa-robot me-2"></i>AI is thinking...
+                </div>
+
+                <!-- Input -->
+                <div class="chat-input-container">
+                    <div class="row g-2">
+                        <div class="col">
+                            <textarea 
+                                class="form-control chat-input" 
+                                id="messageInput" 
+                                placeholder="Ask me about compliance, security, or type 'help' for examples..."
+                                rows="2"
+                                maxlength="10000"></textarea>
+                        </div>
+                        <div class="col-auto d-flex align-items-end">
+                            <button class="send-button" id="sendButton" onclick="sendMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            Press Enter to send, Shift+Enter for new line
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Highlight.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+    
+    <!-- DOMPurify for HTML sanitization -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+</body>
+</html>

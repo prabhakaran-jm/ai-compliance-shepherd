@@ -1,12 +1,12 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
-import { BedrockKnowledgeBaseService } from './services/BedrockKnowledgeBaseService';
+import { BedrockAgentService } from './services/BedrockAgentService';
 import { logger } from './utils/logger';
 import { createErrorResponse, handleError } from './utils/errorHandler';
-import { validateQueryRequest, validateIngestRequest } from './utils/validation';
+import { validateAgentRequest } from './utils/validation';
 
 /**
- * Lambda handler for Bedrock Knowledge Base operations
- * Provides AI-powered compliance guidance and query capabilities
+ * Lambda handler for Bedrock Agent operations
+ * Provides AI agent with action groups for compliance operations
  */
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -14,7 +14,7 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   const correlationId = context.awsRequestId;
   
-  logger.info('Bedrock Knowledge Base handler invoked', {
+  logger.info('Bedrock Agent handler invoked', {
     correlationId,
     httpMethod: event.httpMethod,
     path: event.path,
@@ -23,26 +23,26 @@ export const handler = async (
 
   try {
     // Validate HTTP method
-    if (!['POST', 'GET', 'PUT'].includes(event.httpMethod)) { 
+    if (!['POST', 'GET', 'PUT'].includes(event.httpMethod)) {
       return createErrorResponse(405, 'Method not allowed', correlationId);
     }
 
-    const service = new BedrockKnowledgeBaseService();
+    const service = new BedrockAgentService();
 
     // Route based on path and method
     const path = event.path;
     const method = event.httpMethod;
 
-    if (method === 'POST' && path === '/knowledge-base/query') {
-      // Query the knowledge base
-      const validationResult = validateQueryRequest(event.body);
+    if (method === 'POST' && path === '/agent/invoke') {
+      // Invoke the agent with a request
+      const validationResult = validateAgentRequest(event.body);
       if (!validationResult.success) {
         return createErrorResponse(400, 'Invalid request', correlationId, {
           errors: validationResult.errors
         });
       }
 
-      const result = await service.queryKnowledgeBase(validationResult.data, correlationId);
+      const result = await service.invokeAgent(validationResult.data, correlationId);
       
       return {
         statusCode: 200,
@@ -60,111 +60,84 @@ export const handler = async (
       };
     }
 
-    if (method === 'POST' && path === '/knowledge-base/ingest') {
-      // Ingest new compliance data
-      const validationResult = validateIngestRequest(event.body);
+    if (method === 'POST' && path === '/agent/chat') {
+      // Chat with the agent
+      const validationResult = validateAgentRequest(event.body);
       if (!validationResult.success) {
         return createErrorResponse(400, 'Invalid request', correlationId, {
           errors: validationResult.errors
         });
       }
 
-      const result = await service.ingestComplianceData(validationResult.data, correlationId);
+      const result = await service.chatWithAgent(validationResult.data, correlationId);
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+          'Access-Control-Allow-Methods': 'POST,GET,PUT,OPTIONS'
+        },
+        body: JSON.stringify({
+          success: true,
+          correlationId,
+          result
+        })
+      };
+    }
+
+    if (method === 'GET' && path === '/agent/status') {
+      // Get agent status
+      const result = await service.getAgentStatus(correlationId);
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+          'Access-Control-Allow-Methods': 'POST,GET,PUT,OPTIONS'
+        },
+        body: JSON.stringify({
+          success: true,
+          correlationId,
+          result
+        })
+      };
+    }
+
+    if (method === 'GET' && path.startsWith('/agent/') && path.endsWith('/sessions')) {
+      // List agent sessions
+      const agentId = event.pathParameters?.agentId;
+      if (!agentId) {
+        return createErrorResponse(400, 'Missing agent ID', correlationId);
+      }
+
+      const result = await service.listSessions(agentId, correlationId);
+      
+      return {
+        statusCode: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+          'Access-Control-Allow-Methods': 'POST,GET,PUT,OPTIONS'
+        },
+        body: JSON.stringify({
+          success: true,
+          correlationId,
+          result
+        })
+      };
+    }
+
+    if (method === 'PUT' && path === '/agent/prepare') {
+      // Prepare the agent (create/update agent and action groups)
+      const result = await service.prepareAgent(correlationId);
       
       return {
         statusCode: 202,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-          'Access-Control-Allow-Methods': 'POST,GET,PUT,OPTIONS'
-        },
-        body: JSON.stringify({
-          success: true,
-          correlationId,
-          result
-        })
-      };
-    }
-
-    if (method === 'GET' && path === '/knowledge-base/status') {
-      // Get knowledge base status
-      const result = await service.getKnowledgeBaseStatus(correlationId);
-      
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-          'Access-Control-Allow-Methods': 'POST,GET,PUT,OPTIONS'
-        },
-        body: JSON.stringify({
-          success: true,
-          correlationId,
-          result
-        })
-      };
-    }
-
-    if (method === 'GET' && path.startsWith('/knowledge-base/') && path.endsWith('/sources')) {
-      // List knowledge base sources
-      const knowledgeBaseId = event.pathParameters?.knowledgeBaseId;
-      if (!knowledgeBaseId) {
-        return createErrorResponse(400, 'Missing knowledge base ID', correlationId);
-      }
-
-      const result = await service.listDataSources(knowledgeBaseId, correlationId);
-      
-      return {
-        statusCode: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-          'Access-Control-Allow-Methods': 'POST,GET,PUT,OPTIONS'
-        },
-        body: JSON.stringify({
-          success: true,
-          correlationId,
-          result
-        })
-      };
-    }
-
-    if (method === 'PUT' && path === '/knowledge-base/sync') {
-      // Sync knowledge base data sources
-      const result = await service.syncDataSources(correlationId);
-      
-      return {
-        statusCode: 202,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-          'Access-Control-Allow-Methods': 'POST,GET,PUT,OPTIONS'
-        },
-        body: JSON.stringify({
-          success: true,
-          correlationId,
-          result
-        })
-      };
-    }
-
-    if (method === 'POST' && path === '/knowledge-base/chat') {
-      // Chat interface for compliance guidance
-      const validationResult = validateQueryRequest(event.body);
-      if (!validationResult.success) {
-        return createErrorResponse(400, 'Invalid request', correlationId, {
-          errors: validationResult.errors
-        });
-      }
-
-      const result = await service.chatWithCompliance(validationResult.data, correlationId);
-      
-      return {
-        statusCode: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -195,7 +168,7 @@ export const handler = async (
     return createErrorResponse(404, 'Not found', correlationId);
 
   } catch (error) {
-    logger.error('Error in Bedrock Knowledge Base handler', {
+    logger.error('Error in Bedrock Agent handler', {
       correlationId,
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined

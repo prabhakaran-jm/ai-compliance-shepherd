@@ -1,0 +1,418 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AI Compliance Shepherd - Master Template for All Cross-Account IAM Roles'
+
+Parameters:
+  PlatformAccountId:
+    Type: String
+    Description: AWS Account ID of the AI Compliance Shepherd platform
+    AllowedPattern: '[0-9]{12}'
+    ConstraintDescription: Must be a valid 12-digit AWS Account ID
+  
+  ExternalId:
+    Type: String
+    Description: Unique external ID for secure cross-account access
+    MinLength: 16
+    MaxLength: 64
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must be 16-64 characters, alphanumeric with hyphens and underscores
+  
+  CustomerName:
+    Type: String
+    Description: Customer name for role naming and tagging
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must contain only alphanumeric characters, hyphens, and underscores
+  
+  DeploymentTier:
+    Type: String
+    Default: 'STANDARD'
+    AllowedValues: ['BASIC', 'STANDARD', 'PREMIUM', 'ENTERPRISE']
+    Description: Customer tier determining which roles to deploy
+  
+  EnableScanRole:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Deploy compliance scanning role (required for all tiers)
+  
+  EnableRemediationRole:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Deploy compliance remediation role (STANDARD tier and above)
+  
+  EnableAuditRole:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Deploy compliance audit role (PREMIUM tier and above)
+  
+  EnableReadOnlyRole:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Deploy read-only monitoring role (all tiers)
+  
+  # Remediation Role Options
+  EnableS3Remediation:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Enable S3 bucket remediation capabilities
+  
+  EnableSecurityGroupRemediation:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Enable Security Group remediation capabilities
+  
+  EnableIAMRemediation:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Enable IAM remediation capabilities (high risk, ENTERPRISE only)
+  
+  # Audit Role Options
+  IncludeBillingData:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Include billing data access in audit role (PREMIUM and ENTERPRISE)
+  
+  IncludeHistoricalData:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Include historical data access in audit role
+
+Conditions:
+  # Tier-based conditions
+  IsBasicTier: !Equals [!Ref DeploymentTier, 'BASIC']
+  IsStandardTier: !Equals [!Ref DeploymentTier, 'STANDARD']
+  IsPremiumTier: !Equals [!Ref DeploymentTier, 'PREMIUM']
+  IsEnterpriseTier: !Equals [!Ref DeploymentTier, 'ENTERPRISE']
+  
+  # Role deployment conditions
+  DeployScanRole: !And
+    - !Equals [!Ref EnableScanRole, 'true']
+  
+  DeployRemediationRole: !And
+    - !Equals [!Ref EnableRemediationRole, 'true']
+    - !Or
+      - !Condition IsStandardTier
+      - !Condition IsPremiumTier
+      - !Condition IsEnterpriseTier
+  
+  DeployAuditRole: !And
+    - !Equals [!Ref EnableAuditRole, 'true']
+    - !Or
+      - !Condition IsPremiumTier
+      - !Condition IsEnterpriseTier
+  
+  DeployReadOnlyRole: !Equals [!Ref EnableReadOnlyRole, 'true']
+  
+  # Feature-specific conditions
+  EnableIAMRemediationForEnterprise: !And
+    - !Equals [!Ref EnableIAMRemediation, 'true']
+    - !Condition IsEnterpriseTier
+  
+  EnableBillingForPremium: !And
+    - !Equals [!Ref IncludeBillingData, 'true']
+    - !Or
+      - !Condition IsPremiumTier
+      - !Condition IsEnterpriseTier
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Platform Configuration"
+        Parameters:
+          - PlatformAccountId
+          - ExternalId
+          - CustomerName
+          - DeploymentTier
+      - Label:
+          default: "Role Deployment Options"
+        Parameters:
+          - EnableScanRole
+          - EnableRemediationRole
+          - EnableAuditRole
+          - EnableReadOnlyRole
+      - Label:
+          default: "Remediation Capabilities"
+        Parameters:
+          - EnableS3Remediation
+          - EnableSecurityGroupRemediation
+          - EnableIAMRemediation
+      - Label:
+          default: "Audit Capabilities"
+        Parameters:
+          - IncludeBillingData
+          - IncludeHistoricalData
+
+Resources:
+  # Compliance Scanning Role (Required for all tiers)
+  ScanRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployScanRole
+    Properties:
+      TemplateURL: 'https://templates.compliance-shepherd.com/compliance-scan-role.yaml'
+      Parameters:
+        PlatformAccountId: !Ref PlatformAccountId
+        ExternalId: !Ref ExternalId
+        RoleName: !Sub 'AIComplianceShepherd-${CustomerName}-ScanRole'
+        SessionDuration: 3600
+      Tags:
+        - Key: 'CustomerName'
+          Value: !Ref CustomerName
+        - Key: 'DeploymentTier'
+          Value: !Ref DeploymentTier
+        - Key: 'RoleType'
+          Value: 'Scanning'
+
+  # Compliance Remediation Role (STANDARD tier and above)
+  RemediationRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployRemediationRole
+    Properties:
+      TemplateURL: 'https://templates.compliance-shepherd.com/compliance-remediation-role.yaml'
+      Parameters:
+        PlatformAccountId: !Ref PlatformAccountId
+        ExternalId: !Ref ExternalId
+        RoleName: !Sub 'AIComplianceShepherd-${CustomerName}-RemediationRole'
+        SessionDuration: 1800
+        EnableS3Remediation: !Ref EnableS3Remediation
+        EnableSecurityGroupRemediation: !Ref EnableSecurityGroupRemediation
+        EnableIAMRemediation: !If [EnableIAMRemediationForEnterprise, 'true', 'false']
+      Tags:
+        - Key: 'CustomerName'
+          Value: !Ref CustomerName
+        - Key: 'DeploymentTier'
+          Value: !Ref DeploymentTier
+        - Key: 'RoleType'
+          Value: 'Remediation'
+
+  # Compliance Audit Role (PREMIUM tier and above)
+  AuditRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployAuditRole
+    Properties:
+      TemplateURL: 'https://templates.compliance-shepherd.com/compliance-audit-role.yaml'
+      Parameters:
+        PlatformAccountId: !Ref PlatformAccountId
+        ExternalId: !Ref ExternalId
+        RoleName: !Sub 'AIComplianceShepherd-${CustomerName}-AuditRole'
+        SessionDuration: 7200
+        IncludeBillingData: !If [EnableBillingForPremium, 'true', 'false']
+        IncludeHistoricalData: !Ref IncludeHistoricalData
+      Tags:
+        - Key: 'CustomerName'
+          Value: !Ref CustomerName
+        - Key: 'DeploymentTier'
+          Value: !Ref DeploymentTier
+        - Key: 'RoleType'
+          Value: 'Audit'
+
+  # Read-Only Monitoring Role (All tiers)
+  ReadOnlyRoleStack:
+    Type: AWS::CloudFormation::Stack
+    Condition: DeployReadOnlyRole
+    Properties:
+      TemplateURL: 'https://templates.compliance-shepherd.com/compliance-readonly-role.yaml'
+      Parameters:
+        PlatformAccountId: !Ref PlatformAccountId
+        ExternalId: !Ref ExternalId
+        RoleName: !Sub 'AIComplianceShepherd-${CustomerName}-ReadOnlyRole'
+        SessionDuration: 900
+      Tags:
+        - Key: 'CustomerName'
+          Value: !Ref CustomerName
+        - Key: 'DeploymentTier'
+          Value: !Ref DeploymentTier
+        - Key: 'RoleType'
+          Value: 'ReadOnly'
+
+  # Customer Configuration Parameter
+  CustomerConfigParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub '/compliance-shepherd/customers/${CustomerName}/config'
+      Type: 'String'
+      Value: !Sub |
+        {
+          "customerName": "${CustomerName}",
+          "deploymentTier": "${DeploymentTier}",
+          "platformAccountId": "${PlatformAccountId}",
+          "externalId": "${ExternalId}",
+          "deployedRoles": {
+            "scanRole": "${EnableScanRole}",
+            "remediationRole": "${EnableRemediationRole}",
+            "auditRole": "${EnableAuditRole}",
+            "readOnlyRole": "${EnableReadOnlyRole}"
+          },
+          "capabilities": {
+            "s3Remediation": "${EnableS3Remediation}",
+            "securityGroupRemediation": "${EnableSecurityGroupRemediation}",
+            "iamRemediation": "${EnableIAMRemediation}",
+            "billingData": "${IncludeBillingData}",
+            "historicalData": "${IncludeHistoricalData}"
+          },
+          "deploymentDate": "${AWS::StackName}",
+          "region": "${AWS::Region}"
+        }
+      Description: 'AI Compliance Shepherd customer configuration'
+      Tags:
+        CustomerName: !Ref CustomerName
+        DeploymentTier: !Ref DeploymentTier
+        Purpose: 'ComplianceShepherdConfig'
+
+  # CloudWatch Dashboard for Role Monitoring
+  RoleMonitoringDashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardName: !Sub 'AIComplianceShepherd-${CustomerName}-RoleMonitoring'
+      DashboardBody: !Sub |
+        {
+          "widgets": [
+            {
+              "type": "text",
+              "x": 0,
+              "y": 0,
+              "width": 24,
+              "height": 2,
+              "properties": {
+                "markdown": "# AI Compliance Shepherd - Role Monitoring Dashboard\n**Customer:** ${CustomerName} | **Tier:** ${DeploymentTier} | **Region:** ${AWS::Region}"
+              }
+            },
+            {
+              "type": "metric",
+              "x": 0,
+              "y": 2,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "metrics": [
+                  [ "AWS/CloudTrail", "AssumeRole", "RoleName", "AIComplianceShepherd-${CustomerName}-ScanRole" ],
+                  [ "...", "AIComplianceShepherd-${CustomerName}-RemediationRole" ],
+                  [ "...", "AIComplianceShepherd-${CustomerName}-AuditRole" ],
+                  [ "...", "AIComplianceShepherd-${CustomerName}-ReadOnlyRole" ]
+                ],
+                "period": 300,
+                "stat": "Sum",
+                "region": "${AWS::Region}",
+                "title": "Role Assumption Activity",
+                "view": "timeSeries"
+              }
+            },
+            {
+              "type": "log",
+              "x": 12,
+              "y": 2,
+              "width": 12,
+              "height": 6,
+              "properties": {
+                "query": "SOURCE '/aws/cloudtrail'\n| fields @timestamp, sourceIPAddress, userIdentity.type, eventName\n| filter eventName = \"AssumeRole\"\n| filter resources.0.ARN like /AIComplianceShepherd-${CustomerName}/\n| sort @timestamp desc\n| limit 20",
+                "region": "${AWS::Region}",
+                "title": "Recent Role Assumptions",
+                "view": "table"
+              }
+            }
+          ]
+        }
+
+Outputs:
+  # Deployment Summary
+  DeploymentSummary:
+    Description: 'Summary of deployed roles and capabilities'
+    Value: !Sub |
+      Customer: ${CustomerName}
+      Tier: ${DeploymentTier}
+      Deployed Roles:
+      - Scan Role: ${EnableScanRole}
+      - Remediation Role: ${EnableRemediationRole}
+      - Audit Role: ${EnableAuditRole}
+      - Read-Only Role: ${EnableReadOnlyRole}
+      
+      Capabilities:
+      - S3 Remediation: ${EnableS3Remediation}
+      - Security Group Remediation: ${EnableSecurityGroupRemediation}
+      - IAM Remediation: ${EnableIAMRemediation}
+      - Billing Data Access: ${IncludeBillingData}
+      - Historical Data Access: ${IncludeHistoricalData}
+    Export:
+      Name: !Sub '${AWS::StackName}-DeploymentSummary'
+
+  # Role ARNs (conditional outputs)
+  ScanRoleArn:
+    Condition: DeployScanRole
+    Description: 'ARN of the compliance scanning role'
+    Value: !GetAtt ScanRoleStack.Outputs.RoleArn
+    Export:
+      Name: !Sub '${AWS::StackName}-ScanRoleArn'
+
+  RemediationRoleArn:
+    Condition: DeployRemediationRole
+    Description: 'ARN of the compliance remediation role'
+    Value: !GetAtt RemediationRoleStack.Outputs.RoleArn
+    Export:
+      Name: !Sub '${AWS::StackName}-RemediationRoleArn'
+
+  AuditRoleArn:
+    Condition: DeployAuditRole
+    Description: 'ARN of the compliance audit role'
+    Value: !GetAtt AuditRoleStack.Outputs.RoleArn
+    Export:
+      Name: !Sub '${AWS::StackName}-AuditRoleArn'
+
+  ReadOnlyRoleArn:
+    Condition: DeployReadOnlyRole
+    Description: 'ARN of the read-only monitoring role'
+    Value: !GetAtt ReadOnlyRoleStack.Outputs.RoleArn
+    Export:
+      Name: !Sub '${AWS::StackName}-ReadOnlyRoleArn'
+
+  # Customer Configuration
+  CustomerConfigParameterName:
+    Description: 'SSM Parameter name containing customer configuration'
+    Value: !Ref CustomerConfigParameter
+    Export:
+      Name: !Sub '${AWS::StackName}-CustomerConfigParameter'
+
+  ExternalId:
+    Description: 'External ID for role assumption'
+    Value: !Ref ExternalId
+    Export:
+      Name: !Sub '${AWS::StackName}-ExternalId'
+
+  # Monitoring
+  DashboardUrl:
+    Description: 'CloudWatch Dashboard URL for role monitoring'
+    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${RoleMonitoringDashboard}'
+    Export:
+      Name: !Sub '${AWS::StackName}-DashboardUrl'
+
+  # Quick Start Commands
+  TestScanRoleCommand:
+    Condition: DeployScanRole
+    Description: 'Command to test scan role assumption'
+    Value: !Sub |
+      aws sts assume-role \
+        --role-arn ${ScanRoleStack.Outputs.RoleArn} \
+        --role-session-name test-scan-session \
+        --external-id ${ExternalId}
+    Export:
+      Name: !Sub '${AWS::StackName}-TestScanRoleCommand'
+
+  # Security Information
+  SecurityConsiderations:
+    Description: 'Important security considerations for deployed roles'
+    Value: !Sub |
+      IMPORTANT SECURITY NOTES:
+      1. External ID: ${ExternalId} - Keep this secret and secure
+      2. Platform Account: ${PlatformAccountId} - Only this account can assume roles
+      3. Monitor role usage via CloudWatch Dashboard
+      4. Review role permissions regularly
+      5. IAM Remediation: ${EnableIAMRemediation} - High risk capability
+      6. Billing Access: ${IncludeBillingData} - Sensitive financial data
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityConsiderations'

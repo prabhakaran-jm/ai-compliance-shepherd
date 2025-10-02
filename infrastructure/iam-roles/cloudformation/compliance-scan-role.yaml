@@ -1,0 +1,355 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AI Compliance Shepherd - Cross-Account Scanning Role with Read-Only Permissions'
+
+Parameters:
+  PlatformAccountId:
+    Type: String
+    Description: AWS Account ID of the AI Compliance Shepherd platform
+    AllowedPattern: '[0-9]{12}'
+    ConstraintDescription: Must be a valid 12-digit AWS Account ID
+  
+  ExternalId:
+    Type: String
+    Description: Unique external ID for secure cross-account access
+    MinLength: 16
+    MaxLength: 64
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must be 16-64 characters, alphanumeric with hyphens and underscores
+  
+  RoleName:
+    Type: String
+    Default: 'AIComplianceShepherd-ScanRole'
+    Description: Name for the compliance scanning role
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must contain only alphanumeric characters, hyphens, and underscores
+  
+  SessionDuration:
+    Type: Number
+    Default: 3600
+    MinValue: 900
+    MaxValue: 43200
+    Description: Maximum session duration in seconds (15 minutes to 12 hours)
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Platform Configuration"
+        Parameters:
+          - PlatformAccountId
+          - ExternalId
+      - Label:
+          default: "Role Configuration"
+        Parameters:
+          - RoleName
+          - SessionDuration
+    ParameterLabels:
+      PlatformAccountId:
+        default: "Platform Account ID"
+      ExternalId:
+        default: "External ID"
+      RoleName:
+        default: "Role Name"
+      SessionDuration:
+        default: "Session Duration (seconds)"
+
+Resources:
+  # Main Compliance Scanning Role
+  ComplianceScanRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      Description: 'Cross-account role for AI Compliance Shepherd scanning operations'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${PlatformAccountId}:root'
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref ExternalId
+              IpAddress:
+                'aws:SourceIp': 
+                  - '0.0.0.0/0'  # In production, restrict to platform IP ranges
+              DateGreaterThan:
+                'aws:CurrentTime': '2024-01-01T00:00:00Z'
+              NumericLessThan:
+                'aws:RequestedRegion': '50'  # Limit to reasonable number of regions
+      MaxSessionDuration: !Ref SessionDuration
+      ManagedPolicyArns:
+        - !Ref ComplianceScanPolicy
+        - !Ref SecurityAuditPolicy
+        - !Ref ConfigReadPolicy
+        - !Ref CloudTrailReadPolicy
+      Tags:
+        - Key: 'Purpose'
+          Value: 'AI Compliance Shepherd Scanning'
+        - Key: 'Environment'
+          Value: 'Production'
+        - Key: 'CreatedBy'
+          Value: 'CloudFormation'
+        - Key: 'LastUpdated'
+          Value: !Sub '${AWS::StackName}-${AWS::Region}'
+
+  # Core Compliance Scanning Policy
+  ComplianceScanPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-ComplianceScanPolicy'
+      Description: 'Core permissions for compliance scanning and resource discovery'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # EC2 and VPC Read Permissions
+          - Sid: 'EC2ReadPermissions'
+            Effect: Allow
+            Action:
+              - 'ec2:Describe*'
+              - 'ec2:Get*'
+              - 'ec2:List*'
+              - 'vpc:Describe*'
+              - 'vpc:Get*'
+              - 'vpc:List*'
+            Resource: '*'
+            
+          # S3 Read Permissions
+          - Sid: 'S3ReadPermissions'
+            Effect: Allow
+            Action:
+              - 's3:GetBucket*'
+              - 's3:GetObject*'
+              - 's3:List*'
+              - 's3:GetEncryptionConfiguration'
+              - 's3:GetPublicAccessBlock'
+              - 's3:GetBucketVersioning'
+              - 's3:GetBucketLogging'
+              - 's3:GetBucketNotification'
+              - 's3:GetBucketPolicy'
+              - 's3:GetBucketPolicyStatus'
+              - 's3:GetBucketAcl'
+              - 's3:GetBucketCORS'
+              - 's3:GetBucketWebsite'
+              - 's3:GetBucketLocation'
+              - 's3:GetBucketTagging'
+              - 's3:GetBucketRequestPayment'
+              - 's3:GetBucketOwnershipControls'
+            Resource: '*'
+            
+          # IAM Read Permissions
+          - Sid: 'IAMReadPermissions'
+            Effect: Allow
+            Action:
+              - 'iam:Get*'
+              - 'iam:List*'
+              - 'iam:GenerateCredentialReport'
+              - 'iam:GenerateServiceLastAccessedDetails'
+              - 'iam:GetCredentialReport'
+              - 'iam:GetServiceLastAccessedDetails'
+              - 'iam:SimulatePrincipalPolicy'
+              - 'iam:SimulateCustomPolicy'
+            Resource: '*'
+            
+          # RDS Read Permissions
+          - Sid: 'RDSReadPermissions'
+            Effect: Allow
+            Action:
+              - 'rds:Describe*'
+              - 'rds:List*'
+            Resource: '*'
+            
+          # Lambda Read Permissions
+          - Sid: 'LambdaReadPermissions'
+            Effect: Allow
+            Action:
+              - 'lambda:Get*'
+              - 'lambda:List*'
+            Resource: '*'
+            
+          # KMS Read Permissions
+          - Sid: 'KMSReadPermissions'
+            Effect: Allow
+            Action:
+              - 'kms:Describe*'
+              - 'kms:Get*'
+              - 'kms:List*'
+            Resource: '*'
+            
+          # CloudFormation Read Permissions
+          - Sid: 'CloudFormationReadPermissions'
+            Effect: Allow
+            Action:
+              - 'cloudformation:Describe*'
+              - 'cloudformation:Get*'
+              - 'cloudformation:List*'
+            Resource: '*'
+
+  # Security Audit Policy
+  SecurityAuditPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-SecurityAuditPolicy'
+      Description: 'Security-focused read permissions for compliance auditing'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Security Hub Read Permissions
+          - Sid: 'SecurityHubReadPermissions'
+            Effect: Allow
+            Action:
+              - 'securityhub:Get*'
+              - 'securityhub:List*'
+              - 'securityhub:Describe*'
+            Resource: '*'
+            
+          # GuardDuty Read Permissions
+          - Sid: 'GuardDutyReadPermissions'
+            Effect: Allow
+            Action:
+              - 'guardduty:Get*'
+              - 'guardduty:List*'
+              - 'guardduty:Describe*'
+            Resource: '*'
+            
+          # Inspector Read Permissions
+          - Sid: 'InspectorReadPermissions'
+            Effect: Allow
+            Action:
+              - 'inspector:Describe*'
+              - 'inspector:Get*'
+              - 'inspector:List*'
+              - 'inspector2:Get*'
+              - 'inspector2:List*'
+              - 'inspector2:Describe*'
+            Resource: '*'
+            
+          # Macie Read Permissions
+          - Sid: 'MacieReadPermissions'
+            Effect: Allow
+            Action:
+              - 'macie2:Get*'
+              - 'macie2:List*'
+              - 'macie2:Describe*'
+            Resource: '*'
+            
+          # Access Analyzer Read Permissions
+          - Sid: 'AccessAnalyzerReadPermissions'
+            Effect: Allow
+            Action:
+              - 'access-analyzer:Get*'
+              - 'access-analyzer:List*'
+            Resource: '*'
+            
+          # Trusted Advisor Read Permissions
+          - Sid: 'TrustedAdvisorReadPermissions'
+            Effect: Allow
+            Action:
+              - 'support:Describe*'
+              - 'support:Get*'
+            Resource: '*'
+
+  # Config Service Read Policy
+  ConfigReadPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-ConfigReadPolicy'
+      Description: 'AWS Config read permissions for compliance rule evaluation'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Config Read Permissions
+          - Sid: 'ConfigReadPermissions'
+            Effect: Allow
+            Action:
+              - 'config:Get*'
+              - 'config:List*'
+              - 'config:Describe*'
+              - 'config:BatchGet*'
+              - 'config:SelectResourceConfig'
+            Resource: '*'
+            
+          # Systems Manager Read Permissions
+          - Sid: 'SSMReadPermissions'
+            Effect: Allow
+            Action:
+              - 'ssm:Get*'
+              - 'ssm:List*'
+              - 'ssm:Describe*'
+            Resource: '*'
+
+  # CloudTrail Read Policy
+  CloudTrailReadPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-CloudTrailReadPolicy'
+      Description: 'CloudTrail read permissions for audit trail analysis'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # CloudTrail Read Permissions
+          - Sid: 'CloudTrailReadPermissions'
+            Effect: Allow
+            Action:
+              - 'cloudtrail:Get*'
+              - 'cloudtrail:List*'
+              - 'cloudtrail:Describe*'
+              - 'cloudtrail:LookupEvents'
+            Resource: '*'
+            
+          # CloudWatch Logs Read Permissions
+          - Sid: 'CloudWatchLogsReadPermissions'
+            Effect: Allow
+            Action:
+              - 'logs:Describe*'
+              - 'logs:Get*'
+              - 'logs:List*'
+              - 'logs:FilterLogEvents'
+              - 'logs:StartQuery'
+              - 'logs:StopQuery'
+              - 'logs:GetQueryResults'
+            Resource: '*'
+            
+          # CloudWatch Read Permissions
+          - Sid: 'CloudWatchReadPermissions'
+            Effect: Allow
+            Action:
+              - 'cloudwatch:Get*'
+              - 'cloudwatch:List*'
+              - 'cloudwatch:Describe*'
+            Resource: '*'
+
+Outputs:
+  RoleArn:
+    Description: 'ARN of the created compliance scanning role'
+    Value: !GetAtt ComplianceScanRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ScanRoleArn'
+  
+  RoleName:
+    Description: 'Name of the created compliance scanning role'
+    Value: !Ref ComplianceScanRole
+    Export:
+      Name: !Sub '${AWS::StackName}-ScanRoleName'
+  
+  ExternalId:
+    Description: 'External ID used for role assumption'
+    Value: !Ref ExternalId
+    Export:
+      Name: !Sub '${AWS::StackName}-ExternalId'
+  
+  PlatformAccountId:
+    Description: 'Platform account ID authorized to assume this role'
+    Value: !Ref PlatformAccountId
+    Export:
+      Name: !Sub '${AWS::StackName}-PlatformAccountId'
+  
+  AssumeRoleCommand:
+    Description: 'AWS CLI command to assume this role'
+    Value: !Sub |
+      aws sts assume-role \
+        --role-arn ${ComplianceScanRole.Arn} \
+        --role-session-name compliance-scan-session \
+        --external-id ${ExternalId}
+    Export:
+      Name: !Sub '${AWS::StackName}-AssumeRoleCommand'

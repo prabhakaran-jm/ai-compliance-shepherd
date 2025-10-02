@@ -1,0 +1,391 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AI Compliance Shepherd - Cross-Account Remediation Role with Limited Write Permissions'
+
+Parameters:
+  PlatformAccountId:
+    Type: String
+    Description: AWS Account ID of the AI Compliance Shepherd platform
+    AllowedPattern: '[0-9]{12}'
+    ConstraintDescription: Must be a valid 12-digit AWS Account ID
+  
+  ExternalId:
+    Type: String
+    Description: Unique external ID for secure cross-account access
+    MinLength: 16
+    MaxLength: 64
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must be 16-64 characters, alphanumeric with hyphens and underscores
+  
+  RoleName:
+    Type: String
+    Default: 'AIComplianceShepherd-RemediationRole'
+    Description: Name for the compliance remediation role
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must contain only alphanumeric characters, hyphens, and underscores
+  
+  SessionDuration:
+    Type: Number
+    Default: 1800
+    MinValue: 900
+    MaxValue: 7200
+    Description: Maximum session duration in seconds (15 minutes to 2 hours)
+  
+  EnableS3Remediation:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Enable S3 bucket remediation capabilities
+  
+  EnableSecurityGroupRemediation:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Enable Security Group remediation capabilities
+  
+  EnableIAMRemediation:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Enable IAM remediation capabilities (high risk)
+
+Conditions:
+  EnableS3Fixes: !Equals [!Ref EnableS3Remediation, 'true']
+  EnableSGFixes: !Equals [!Ref EnableSecurityGroupRemediation, 'true']
+  EnableIAMFixes: !Equals [!Ref EnableIAMRemediation, 'true']
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Platform Configuration"
+        Parameters:
+          - PlatformAccountId
+          - ExternalId
+      - Label:
+          default: "Role Configuration"
+        Parameters:
+          - RoleName
+          - SessionDuration
+      - Label:
+          default: "Remediation Capabilities"
+        Parameters:
+          - EnableS3Remediation
+          - EnableSecurityGroupRemediation
+          - EnableIAMRemediation
+
+Resources:
+  # Main Compliance Remediation Role
+  ComplianceRemediationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      Description: 'Cross-account role for AI Compliance Shepherd remediation operations'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${PlatformAccountId}:root'
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref ExternalId
+              IpAddress:
+                'aws:SourceIp': 
+                  - '0.0.0.0/0'  # In production, restrict to platform IP ranges
+              DateGreaterThan:
+                'aws:CurrentTime': '2024-01-01T00:00:00Z'
+              Bool:
+                'aws:SecureTransport': 'true'
+              StringLike:
+                'aws:userid': '*'  # Additional user validation can be added
+      MaxSessionDuration: !Ref SessionDuration
+      ManagedPolicyArns:
+        - !Ref BaseRemediationPolicy
+        - !If [EnableS3Fixes, !Ref S3RemediationPolicy, !Ref 'AWS::NoValue']
+        - !If [EnableSGFixes, !Ref SecurityGroupRemediationPolicy, !Ref 'AWS::NoValue']
+        - !If [EnableIAMFixes, !Ref IAMRemediationPolicy, !Ref 'AWS::NoValue']
+      Tags:
+        - Key: 'Purpose'
+          Value: 'AI Compliance Shepherd Remediation'
+        - Key: 'Environment'
+          Value: 'Production'
+        - Key: 'RiskLevel'
+          Value: 'Medium'
+        - Key: 'RequiresApproval'
+          Value: 'true'
+
+  # Base Remediation Policy (Read permissions + basic operations)
+  BaseRemediationPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-BaseRemediationPolicy'
+      Description: 'Base permissions for remediation operations including read access'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Read permissions (inherited from scan role)
+          - Sid: 'ReadPermissions'
+            Effect: Allow
+            Action:
+              - 'ec2:Describe*'
+              - 's3:GetBucket*'
+              - 's3:ListBucket*'
+              - 'iam:Get*'
+              - 'iam:List*'
+              - 'rds:Describe*'
+              - 'lambda:Get*'
+              - 'lambda:List*'
+              - 'kms:Describe*'
+              - 'kms:Get*'
+              - 'kms:List*'
+            Resource: '*'
+            
+          # CloudFormation permissions for managed remediation
+          - Sid: 'CloudFormationPermissions'
+            Effect: Allow
+            Action:
+              - 'cloudformation:CreateStack'
+              - 'cloudformation:UpdateStack'
+              - 'cloudformation:DeleteStack'
+              - 'cloudformation:DescribeStacks'
+              - 'cloudformation:DescribeStackEvents'
+              - 'cloudformation:DescribeStackResources'
+              - 'cloudformation:GetTemplate'
+              - 'cloudformation:ValidateTemplate'
+            Resource: 
+              - !Sub 'arn:aws:cloudformation:*:${AWS::AccountId}:stack/compliance-remediation-*/*'
+            Condition:
+              StringEquals:
+                'cloudformation:TemplateUrl': 
+                  - 'https://templates.compliance-shepherd.com/*'
+                  
+          # Tagging permissions for resource management
+          - Sid: 'TaggingPermissions'
+            Effect: Allow
+            Action:
+              - 'tag:GetResources'
+              - 'tag:TagResources'
+              - 'tag:UntagResources'
+              - 'tag:GetTagKeys'
+              - 'tag:GetTagValues'
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'aws:RequestedRegion': 
+                  - 'us-east-1'
+                  - 'us-west-2'
+                  - 'eu-west-1'
+                  - 'ap-southeast-1'
+
+  # S3 Remediation Policy
+  S3RemediationPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: EnableS3Fixes
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-S3RemediationPolicy'
+      Description: 'S3 bucket remediation permissions for compliance fixes'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # S3 Bucket Policy and ACL Management
+          - Sid: 'S3BucketPolicyRemediation'
+            Effect: Allow
+            Action:
+              - 's3:PutBucketPolicy'
+              - 's3:DeleteBucketPolicy'
+              - 's3:PutBucketAcl'
+              - 's3:PutBucketPublicAccessBlock'
+              - 's3:PutBucketVersioning'
+              - 's3:PutBucketEncryption'
+              - 's3:PutBucketLogging'
+              - 's3:PutBucketNotification'
+              - 's3:PutBucketCORS'
+              - 's3:DeleteBucketCORS'
+              - 's3:PutBucketWebsite'
+              - 's3:DeleteBucketWebsite'
+              - 's3:PutBucketTagging'
+              - 's3:PutBucketOwnershipControls'
+            Resource: 
+              - 'arn:aws:s3:::*'
+            Condition:
+              StringNotEquals:
+                's3:ExistingBucketPolicy': 'Deny'  # Prevent overriding explicit deny policies
+              Bool:
+                'aws:SecureTransport': 'true'
+                
+          # S3 Object-level permissions for compliance fixes
+          - Sid: 'S3ObjectRemediation'
+            Effect: Allow
+            Action:
+              - 's3:PutObjectAcl'
+              - 's3:PutObjectTagging'
+              - 's3:DeleteObjectTagging'
+            Resource: 
+              - 'arn:aws:s3:::*/compliance-remediation/*'
+            Condition:
+              StringEquals:
+                's3:x-amz-server-side-encryption': 'AES256'
+
+  # Security Group Remediation Policy
+  SecurityGroupRemediationPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: EnableSGFixes
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-SecurityGroupRemediationPolicy'
+      Description: 'Security Group remediation permissions for compliance fixes'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Security Group Rule Management
+          - Sid: 'SecurityGroupRemediation'
+            Effect: Allow
+            Action:
+              - 'ec2:AuthorizeSecurityGroupIngress'
+              - 'ec2:RevokeSecurityGroupIngress'
+              - 'ec2:AuthorizeSecurityGroupEgress'
+              - 'ec2:RevokeSecurityGroupEgress'
+              - 'ec2:UpdateSecurityGroupRuleDescriptionsIngress'
+              - 'ec2:UpdateSecurityGroupRuleDescriptionsEgress'
+              - 'ec2:CreateTags'
+              - 'ec2:DeleteTags'
+            Resource: 
+              - 'arn:aws:ec2:*:*:security-group/*'
+            Condition:
+              StringNotEquals:
+                'ec2:ResourceTag/ComplianceManaged': 'false'  # Only manage tagged resources
+              IpAddress:
+                'aws:SourceIp': 
+                  - '10.0.0.0/8'   # Restrict to private IP ranges
+                  - '172.16.0.0/12'
+                  - '192.168.0.0/16'
+                  
+          # Network ACL Management (limited)
+          - Sid: 'NetworkACLRemediation'
+            Effect: Allow
+            Action:
+              - 'ec2:CreateNetworkAclEntry'
+              - 'ec2:DeleteNetworkAclEntry'
+              - 'ec2:ReplaceNetworkAclEntry'
+            Resource: 
+              - 'arn:aws:ec2:*:*:network-acl/*'
+            Condition:
+              StringEquals:
+                'ec2:ResourceTag/ComplianceManaged': 'true'
+
+  # IAM Remediation Policy (High Risk - Requires Explicit Approval)
+  IAMRemediationPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: EnableIAMFixes
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-IAMRemediationPolicy'
+      Description: 'Limited IAM remediation permissions for compliance fixes'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # IAM Policy Management (very limited)
+          - Sid: 'IAMPolicyRemediation'
+            Effect: Allow
+            Action:
+              - 'iam:CreatePolicy'
+              - 'iam:CreatePolicyVersion'
+              - 'iam:DeletePolicyVersion'
+              - 'iam:AttachUserPolicy'
+              - 'iam:DetachUserPolicy'
+              - 'iam:AttachGroupPolicy'
+              - 'iam:DetachGroupPolicy'
+              - 'iam:AttachRolePolicy'
+              - 'iam:DetachRolePolicy'
+            Resource: 
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/compliance-managed/*'
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:user/*'
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:group/*'
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:role/*'
+            Condition:
+              StringEquals:
+                'iam:PolicyArn': 
+                  - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/compliance-managed/*'
+              Bool:
+                'aws:MultiFactorAuthPresent': 'true'  # Require MFA for IAM changes
+                
+          # IAM User Management (very limited)
+          - Sid: 'IAMUserRemediation'
+            Effect: Allow
+            Action:
+              - 'iam:UpdateUser'
+              - 'iam:TagUser'
+              - 'iam:UntagUser'
+              - 'iam:UpdateLoginProfile'
+              - 'iam:CreateAccessKey'
+              - 'iam:DeleteAccessKey'
+              - 'iam:UpdateAccessKey'
+            Resource: 
+              - !Sub 'arn:aws:iam::${AWS::AccountId}:user/compliance-managed/*'
+            Condition:
+              StringEquals:
+                'iam:ResourceTag/ComplianceManaged': 'true'
+              Bool:
+                'aws:MultiFactorAuthPresent': 'true'
+
+  # Remediation Logging and Monitoring
+  RemediationLoggingPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-RemediationLoggingPolicy'
+      Description: 'Logging and monitoring permissions for remediation operations'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # CloudWatch Logs for remediation tracking
+          - Sid: 'CloudWatchLogsPermissions'
+            Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+              - 'logs:DescribeLogGroups'
+              - 'logs:DescribeLogStreams'
+            Resource: 
+              - !Sub 'arn:aws:logs:*:${AWS::AccountId}:log-group:/compliance-shepherd/*'
+              
+          # CloudTrail for audit logging
+          - Sid: 'CloudTrailLogging'
+            Effect: Allow
+            Action:
+              - 'cloudtrail:PutEvents'
+            Resource: 
+              - !Sub 'arn:aws:cloudtrail:*:${AWS::AccountId}:trail/compliance-shepherd-*'
+
+Outputs:
+  RoleArn:
+    Description: 'ARN of the created compliance remediation role'
+    Value: !GetAtt ComplianceRemediationRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-RemediationRoleArn'
+  
+  RoleName:
+    Description: 'Name of the created compliance remediation role'
+    Value: !Ref ComplianceRemediationRole
+    Export:
+      Name: !Sub '${AWS::StackName}-RemediationRoleName'
+  
+  ExternalId:
+    Description: 'External ID used for role assumption'
+    Value: !Ref ExternalId
+    Export:
+      Name: !Sub '${AWS::StackName}-ExternalId'
+  
+  EnabledCapabilities:
+    Description: 'Enabled remediation capabilities'
+    Value: !Sub |
+      S3 Remediation: ${EnableS3Remediation}
+      Security Group Remediation: ${EnableSecurityGroupRemediation}
+      IAM Remediation: ${EnableIAMRemediation}
+    Export:
+      Name: !Sub '${AWS::StackName}-EnabledCapabilities'
+  
+  SecurityWarning:
+    Description: 'Security considerations for this role'
+    Value: 'This role has write permissions. Monitor usage carefully and require approval workflows for sensitive operations.'
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityWarning'

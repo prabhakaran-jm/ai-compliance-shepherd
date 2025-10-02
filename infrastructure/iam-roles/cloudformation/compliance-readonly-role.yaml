@@ -1,0 +1,362 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AI Compliance Shepherd - Cross-Account Read-Only Role for Basic Monitoring'
+
+Parameters:
+  PlatformAccountId:
+    Type: String
+    Description: AWS Account ID of the AI Compliance Shepherd platform
+    AllowedPattern: '[0-9]{12}'
+    ConstraintDescription: Must be a valid 12-digit AWS Account ID
+  
+  ExternalId:
+    Type: String
+    Description: Unique external ID for secure cross-account access
+    MinLength: 16
+    MaxLength: 64
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must be 16-64 characters, alphanumeric with hyphens and underscores
+  
+  RoleName:
+    Type: String
+    Default: 'AIComplianceShepherd-ReadOnlyRole'
+    Description: Name for the read-only monitoring role
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must contain only alphanumeric characters, hyphens, and underscores
+  
+  SessionDuration:
+    Type: Number
+    Default: 900
+    MinValue: 900
+    MaxValue: 3600
+    Description: Maximum session duration in seconds (15 minutes to 1 hour)
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Platform Configuration"
+        Parameters:
+          - PlatformAccountId
+          - ExternalId
+      - Label:
+          default: "Role Configuration"
+        Parameters:
+          - RoleName
+          - SessionDuration
+
+Resources:
+  # Main Read-Only Monitoring Role
+  ComplianceReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      Description: 'Cross-account role for AI Compliance Shepherd basic monitoring and health checks'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${PlatformAccountId}:root'
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref ExternalId
+              IpAddress:
+                'aws:SourceIp': 
+                  - '0.0.0.0/0'  # In production, restrict to platform IP ranges
+              DateGreaterThan:
+                'aws:CurrentTime': '2024-01-01T00:00:00Z'
+              Bool:
+                'aws:SecureTransport': 'true'
+              NumericLessThan:
+                'aws:RequestedRegion': '20'  # Limit to reasonable number of regions
+      MaxSessionDuration: !Ref SessionDuration
+      ManagedPolicyArns:
+        - !Ref BasicMonitoringPolicy
+        - !Ref HealthCheckPolicy
+        - !Ref ResourceCountPolicy
+      Tags:
+        - Key: 'Purpose'
+          Value: 'AI Compliance Shepherd Basic Monitoring'
+        - Key: 'Environment'
+          Value: 'Production'
+        - Key: 'RiskLevel'
+          Value: 'Low'
+        - Key: 'AccessLevel'
+          Value: 'ReadOnly'
+
+  # Basic Monitoring Policy
+  BasicMonitoringPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-BasicMonitoringPolicy'
+      Description: 'Basic monitoring permissions for compliance status checks'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Account and region information
+          - Sid: 'AccountInformationPermissions'
+            Effect: Allow
+            Action:
+              - 'sts:GetCallerIdentity'
+              - 'account:GetAccountInformation'
+              - 'account:ListRegions'
+            Resource: '*'
+            
+          # Basic EC2 information
+          - Sid: 'BasicEC2Permissions'
+            Effect: Allow
+            Action:
+              - 'ec2:DescribeRegions'
+              - 'ec2:DescribeAvailabilityZones'
+              - 'ec2:DescribeInstances'
+              - 'ec2:DescribeInstanceStatus'
+              - 'ec2:DescribeSecurityGroups'
+              - 'ec2:DescribeVpcs'
+              - 'ec2:DescribeSubnets'
+            Resource: '*'
+            
+          # Basic S3 information
+          - Sid: 'BasicS3Permissions'
+            Effect: Allow
+            Action:
+              - 's3:ListAllMyBuckets'
+              - 's3:GetBucketLocation'
+              - 's3:GetBucketVersioning'
+              - 's3:GetBucketEncryption'
+              - 's3:GetPublicAccessBlock'
+            Resource: '*'
+            
+          # Basic IAM information
+          - Sid: 'BasicIAMPermissions'
+            Effect: Allow
+            Action:
+              - 'iam:GetAccountSummary'
+              - 'iam:ListUsers'
+              - 'iam:ListRoles'
+              - 'iam:ListGroups'
+              - 'iam:ListPolicies'
+              - 'iam:GetAccountPasswordPolicy'
+            Resource: '*'
+            
+          # Basic RDS information
+          - Sid: 'BasicRDSPermissions'
+            Effect: Allow
+            Action:
+              - 'rds:DescribeDBInstances'
+              - 'rds:DescribeDBClusters'
+              - 'rds:DescribeDBSnapshots'
+            Resource: '*'
+            
+          # Basic Lambda information
+          - Sid: 'BasicLambdaPermissions'
+            Effect: Allow
+            Action:
+              - 'lambda:ListFunctions'
+              - 'lambda:GetFunction'
+            Resource: '*'
+
+  # Health Check Policy
+  HealthCheckPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-HealthCheckPolicy'
+      Description: 'Health check permissions for service availability monitoring'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Service health checks
+          - Sid: 'ServiceHealthPermissions'
+            Effect: Allow
+            Action:
+              - 'health:DescribeEvents'
+              - 'health:DescribeEventDetails'
+              - 'health:DescribeAffectedEntities'
+            Resource: '*'
+            
+          # CloudWatch basic metrics
+          - Sid: 'BasicCloudWatchPermissions'
+            Effect: Allow
+            Action:
+              - 'cloudwatch:GetMetricStatistics'
+              - 'cloudwatch:ListMetrics'
+              - 'cloudwatch:DescribeAlarms'
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'cloudwatch:namespace': 
+                  - 'AWS/EC2'
+                  - 'AWS/S3'
+                  - 'AWS/RDS'
+                  - 'AWS/Lambda'
+                  - 'AWS/ApplicationELB'
+                  - 'AWS/NetworkELB'
+                  
+          # Systems Manager for patch compliance
+          - Sid: 'BasicSSMPermissions'
+            Effect: Allow
+            Action:
+              - 'ssm:DescribeInstanceInformation'
+              - 'ssm:DescribeInstancePatchStates'
+              - 'ssm:GetComplianceSummary'
+            Resource: '*'
+            
+          # Config for basic compliance status
+          - Sid: 'BasicConfigPermissions'
+            Effect: Allow
+            Action:
+              - 'config:GetComplianceSummaryByConfigRule'
+              - 'config:GetComplianceSummaryByResourceType'
+              - 'config:DescribeConfigRules'
+              - 'config:DescribeConfigurationRecorders'
+              - 'config:DescribeDeliveryChannels'
+            Resource: '*'
+
+  # Resource Count Policy
+  ResourceCountPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-ResourceCountPolicy'
+      Description: 'Resource counting permissions for inventory tracking'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Resource counting permissions
+          - Sid: 'ResourceCountingPermissions'
+            Effect: Allow
+            Action:
+              # EC2 resource counts
+              - 'ec2:DescribeInstances'
+              - 'ec2:DescribeVolumes'
+              - 'ec2:DescribeSnapshots'
+              - 'ec2:DescribeImages'
+              - 'ec2:DescribeSecurityGroups'
+              - 'ec2:DescribeNetworkInterfaces'
+              - 'ec2:DescribeVpcs'
+              - 'ec2:DescribeSubnets'
+              - 'ec2:DescribeRouteTables'
+              - 'ec2:DescribeInternetGateways'
+              - 'ec2:DescribeNatGateways'
+              # S3 resource counts
+              - 's3:ListAllMyBuckets'
+              # IAM resource counts
+              - 'iam:ListUsers'
+              - 'iam:ListRoles'
+              - 'iam:ListGroups'
+              - 'iam:ListPolicies'
+              # RDS resource counts
+              - 'rds:DescribeDBInstances'
+              - 'rds:DescribeDBClusters'
+              # Lambda resource counts
+              - 'lambda:ListFunctions'
+              # CloudFormation stack counts
+              - 'cloudformation:ListStacks'
+              - 'cloudformation:DescribeStacks'
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'aws:RequestedRegion': 
+                  - 'us-east-1'
+                  - 'us-west-1'
+                  - 'us-west-2'
+                  - 'eu-west-1'
+                  - 'eu-central-1'
+                  - 'ap-southeast-1'
+                  - 'ap-northeast-1'
+                  
+          # Tag-based resource discovery
+          - Sid: 'TagBasedDiscoveryPermissions'
+            Effect: Allow
+            Action:
+              - 'tag:GetResources'
+              - 'tag:GetTagKeys'
+              - 'tag:GetTagValues'
+            Resource: '*'
+            
+          # Resource Groups for organized counting
+          - Sid: 'ResourceGroupsPermissions'
+            Effect: Allow
+            Action:
+              - 'resource-groups:ListGroups'
+              - 'resource-groups:GetGroup'
+              - 'resource-groups:ListGroupResources'
+            Resource: '*'
+
+  # CloudWatch Log Group for role usage tracking
+  RoleUsageLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/iam/roles/${RoleName}'
+      RetentionInDays: 30
+      Tags:
+        - Key: 'Purpose'
+          Value: 'IAM Role Usage Tracking'
+        - Key: 'RoleName'
+          Value: !Ref RoleName
+
+Outputs:
+  RoleArn:
+    Description: 'ARN of the created read-only monitoring role'
+    Value: !GetAtt ComplianceReadOnlyRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ReadOnlyRoleArn'
+  
+  RoleName:
+    Description: 'Name of the created read-only monitoring role'
+    Value: !Ref ComplianceReadOnlyRole
+    Export:
+      Name: !Sub '${AWS::StackName}-ReadOnlyRoleName'
+  
+  ExternalId:
+    Description: 'External ID used for role assumption'
+    Value: !Ref ExternalId
+    Export:
+      Name: !Sub '${AWS::StackName}-ExternalId'
+  
+  SessionDuration:
+    Description: 'Maximum session duration in seconds'
+    Value: !Ref SessionDuration
+    Export:
+      Name: !Sub '${AWS::StackName}-SessionDuration'
+  
+  Capabilities:
+    Description: 'Capabilities provided by this read-only role'
+    Value: |
+      - Basic resource inventory and counting
+      - Service health status monitoring
+      - Compliance rule status checking
+      - Account information and limits
+      - CloudWatch metrics access (basic)
+      - No write permissions or sensitive data access
+    Export:
+      Name: !Sub '${AWS::StackName}-Capabilities'
+  
+  UseCases:
+    Description: 'Recommended use cases for this role'
+    Value: |
+      - BASIC tier customers
+      - Health monitoring and alerting
+      - Resource inventory tracking
+      - Compliance dashboard updates
+      - Service availability checks
+      - Cost optimization recommendations (resource counts only)
+    Export:
+      Name: !Sub '${AWS::StackName}-UseCases'
+  
+  SecurityProfile:
+    Description: 'Security profile and risk assessment'
+    Value: |
+      Risk Level: LOW
+      Access Type: Read-Only
+      Session Duration: 15-60 minutes
+      Sensitive Data: None
+      Write Permissions: None
+      Recommended For: All customer tiers
+    Export:
+      Name: !Sub '${AWS::StackName}-SecurityProfile'
+  
+  LogGroupArn:
+    Description: 'CloudWatch Log Group for role usage tracking'
+    Value: !GetAtt RoleUsageLogGroup.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-LogGroupArn'

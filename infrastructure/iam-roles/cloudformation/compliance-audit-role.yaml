@@ -1,0 +1,484 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AI Compliance Shepherd - Cross-Account Audit Role with Enhanced Read Permissions'
+
+Parameters:
+  PlatformAccountId:
+    Type: String
+    Description: AWS Account ID of the AI Compliance Shepherd platform
+    AllowedPattern: '[0-9]{12}'
+    ConstraintDescription: Must be a valid 12-digit AWS Account ID
+  
+  ExternalId:
+    Type: String
+    Description: Unique external ID for secure cross-account access
+    MinLength: 16
+    MaxLength: 64
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must be 16-64 characters, alphanumeric with hyphens and underscores
+  
+  RoleName:
+    Type: String
+    Default: 'AIComplianceShepherd-AuditRole'
+    Description: Name for the compliance audit role
+    AllowedPattern: '[a-zA-Z0-9\-_]+'
+    ConstraintDescription: Must contain only alphanumeric characters, hyphens, and underscores
+  
+  SessionDuration:
+    Type: Number
+    Default: 7200
+    MinValue: 900
+    MaxValue: 43200
+    Description: Maximum session duration in seconds (15 minutes to 12 hours)
+  
+  IncludeBillingData:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Include billing and cost data access for audit evidence
+  
+  IncludeHistoricalData:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Include historical data access for compliance trends
+
+Conditions:
+  EnableBillingAccess: !Equals [!Ref IncludeBillingData, 'true']
+  EnableHistoricalAccess: !Equals [!Ref IncludeHistoricalData, 'true']
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: "Platform Configuration"
+        Parameters:
+          - PlatformAccountId
+          - ExternalId
+      - Label:
+          default: "Role Configuration"
+        Parameters:
+          - RoleName
+          - SessionDuration
+      - Label:
+          default: "Audit Capabilities"
+        Parameters:
+          - IncludeBillingData
+          - IncludeHistoricalData
+
+Resources:
+  # Main Compliance Audit Role
+  ComplianceAuditRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      Description: 'Cross-account role for AI Compliance Shepherd audit evidence collection'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${PlatformAccountId}:root'
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                'sts:ExternalId': !Ref ExternalId
+              IpAddress:
+                'aws:SourceIp': 
+                  - '0.0.0.0/0'  # In production, restrict to platform IP ranges
+              DateGreaterThan:
+                'aws:CurrentTime': '2024-01-01T00:00:00Z'
+              Bool:
+                'aws:SecureTransport': 'true'
+      MaxSessionDuration: !Ref SessionDuration
+      ManagedPolicyArns:
+        - !Ref EnhancedReadPolicy
+        - !Ref ComplianceAuditPolicy
+        - !Ref SecurityAuditPolicy
+        - !Ref ConfigAuditPolicy
+        - !If [EnableBillingAccess, !Ref BillingAuditPolicy, !Ref 'AWS::NoValue']
+        - !If [EnableHistoricalAccess, !Ref HistoricalDataPolicy, !Ref 'AWS::NoValue']
+      Tags:
+        - Key: 'Purpose'
+          Value: 'AI Compliance Shepherd Audit'
+        - Key: 'Environment'
+          Value: 'Production'
+        - Key: 'AuditScope'
+          Value: 'Full'
+        - Key: 'DataClassification'
+          Value: 'Confidential'
+
+  # Enhanced Read Policy (extends scan role permissions)
+  EnhancedReadPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-EnhancedReadPolicy'
+      Description: 'Enhanced read permissions for comprehensive audit evidence collection'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # All services read permissions
+          - Sid: 'ComprehensiveReadPermissions'
+            Effect: Allow
+            Action:
+              - 'ec2:Describe*'
+              - 'ec2:Get*'
+              - 'ec2:List*'
+              - 's3:GetBucket*'
+              - 's3:GetObject*'
+              - 's3:List*'
+              - 'iam:Get*'
+              - 'iam:List*'
+              - 'iam:GenerateCredentialReport'
+              - 'iam:GenerateServiceLastAccessedDetails'
+              - 'iam:GetCredentialReport'
+              - 'iam:GetServiceLastAccessedDetails'
+              - 'rds:Describe*'
+              - 'rds:List*'
+              - 'lambda:Get*'
+              - 'lambda:List*'
+              - 'kms:Describe*'
+              - 'kms:Get*'
+              - 'kms:List*'
+              - 'cloudformation:Describe*'
+              - 'cloudformation:Get*'
+              - 'cloudformation:List*'
+              - 'elasticloadbalancing:Describe*'
+              - 'autoscaling:Describe*'
+              - 'route53:Get*'
+              - 'route53:List*'
+              - 'cloudfront:Get*'
+              - 'cloudfront:List*'
+              - 'apigateway:GET'
+              - 'dynamodb:Describe*'
+              - 'dynamodb:List*'
+              - 'sns:Get*'
+              - 'sns:List*'
+              - 'sqs:Get*'
+              - 'sqs:List*'
+              - 'events:Describe*'
+              - 'events:List*'
+              - 'logs:Describe*'
+              - 'logs:Get*'
+              - 'logs:List*'
+            Resource: '*'
+
+  # Compliance Audit Policy
+  ComplianceAuditPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-ComplianceAuditPolicy'
+      Description: 'Compliance-specific audit permissions for evidence collection'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Organizations read permissions
+          - Sid: 'OrganizationsReadPermissions'
+            Effect: Allow
+            Action:
+              - 'organizations:Describe*'
+              - 'organizations:List*'
+            Resource: '*'
+            
+          # Account information
+          - Sid: 'AccountInformationPermissions'
+            Effect: Allow
+            Action:
+              - 'sts:GetCallerIdentity'
+              - 'sts:GetSessionToken'
+              - 'account:GetAccountInformation'
+              - 'account:GetContactInformation'
+              - 'account:ListRegions'
+            Resource: '*'
+            
+          # Service quotas and limits
+          - Sid: 'ServiceQuotasPermissions'
+            Effect: Allow
+            Action:
+              - 'servicequotas:Get*'
+              - 'servicequotas:List*'
+            Resource: '*'
+            
+          # Well-Architected Tool
+          - Sid: 'WellArchitectedPermissions'
+            Effect: Allow
+            Action:
+              - 'wellarchitected:Get*'
+              - 'wellarchitected:List*'
+            Resource: '*'
+
+  # Security Audit Policy (enhanced)
+  SecurityAuditPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-SecurityAuditPolicy'
+      Description: 'Enhanced security audit permissions for comprehensive security assessment'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Security Hub enhanced permissions
+          - Sid: 'SecurityHubAuditPermissions'
+            Effect: Allow
+            Action:
+              - 'securityhub:Get*'
+              - 'securityhub:List*'
+              - 'securityhub:Describe*'
+              - 'securityhub:BatchGetStandardsControlAssociations'
+              - 'securityhub:GetComplianceDetailsForConfigRule'
+              - 'securityhub:GetFindings'
+              - 'securityhub:GetInsights'
+              - 'securityhub:GetInsightResults'
+            Resource: '*'
+            
+          # GuardDuty enhanced permissions
+          - Sid: 'GuardDutyAuditPermissions'
+            Effect: Allow
+            Action:
+              - 'guardduty:Get*'
+              - 'guardduty:List*'
+              - 'guardduty:Describe*'
+            Resource: '*'
+            
+          # Inspector enhanced permissions
+          - Sid: 'InspectorAuditPermissions'
+            Effect: Allow
+            Action:
+              - 'inspector:Describe*'
+              - 'inspector:Get*'
+              - 'inspector:List*'
+              - 'inspector2:Get*'
+              - 'inspector2:List*'
+              - 'inspector2:Describe*'
+              - 'inspector2:BatchGetAccountAssociations'
+              - 'inspector2:BatchGetCodeSnippet'
+              - 'inspector2:BatchGetFindingDetails'
+              - 'inspector2:BatchGetFreeTrialInfo'
+              - 'inspector2:BatchGetMemberEc2DeepInspectionStatus'
+            Resource: '*'
+            
+          # Macie enhanced permissions
+          - Sid: 'MacieAuditPermissions'
+            Effect: Allow
+            Action:
+              - 'macie2:Get*'
+              - 'macie2:List*'
+              - 'macie2:Describe*'
+              - 'macie2:BatchGetCustomDataIdentifiers'
+            Resource: '*'
+            
+          # Access Analyzer enhanced permissions
+          - Sid: 'AccessAnalyzerAuditPermissions'
+            Effect: Allow
+            Action:
+              - 'access-analyzer:Get*'
+              - 'access-analyzer:List*'
+              - 'access-analyzer:ValidatePolicy'
+            Resource: '*'
+            
+          # Certificate Manager
+          - Sid: 'CertificateManagerPermissions'
+            Effect: Allow
+            Action:
+              - 'acm:Describe*'
+              - 'acm:Get*'
+              - 'acm:List*'
+            Resource: '*'
+            
+          # Secrets Manager
+          - Sid: 'SecretsManagerPermissions'
+            Effect: Allow
+            Action:
+              - 'secretsmanager:Describe*'
+              - 'secretsmanager:Get*'
+              - 'secretsmanager:List*'
+            Resource: '*'
+            
+          # Parameter Store
+          - Sid: 'ParameterStorePermissions'
+            Effect: Allow
+            Action:
+              - 'ssm:Describe*'
+              - 'ssm:Get*'
+              - 'ssm:List*'
+            Resource: '*'
+
+  # Config Audit Policy (enhanced)
+  ConfigAuditPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-ConfigAuditPolicy'
+      Description: 'Enhanced AWS Config audit permissions for compliance rule evaluation'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Config enhanced permissions
+          - Sid: 'ConfigAuditPermissions'
+            Effect: Allow
+            Action:
+              - 'config:Get*'
+              - 'config:List*'
+              - 'config:Describe*'
+              - 'config:BatchGet*'
+              - 'config:SelectResourceConfig'
+              - 'config:GetComplianceDetailsByConfigRule'
+              - 'config:GetComplianceDetailsByResource'
+              - 'config:GetComplianceSummaryByConfigRule'
+              - 'config:GetComplianceSummaryByResourceType'
+            Resource: '*'
+            
+          # Config Remediation
+          - Sid: 'ConfigRemediationPermissions'
+            Effect: Allow
+            Action:
+              - 'config:DescribeRemediationConfigurations'
+              - 'config:DescribeRemediationExceptions'
+              - 'config:GetRemediationConfiguration'
+              - 'config:GetRemediationExceptions'
+            Resource: '*'
+            
+          # Config Conformance Packs
+          - Sid: 'ConfigConformancePackPermissions'
+            Effect: Allow
+            Action:
+              - 'config:DescribeConformancePacks'
+              - 'config:DescribeConformancePackCompliance'
+              - 'config:DescribeConformancePackStatus'
+              - 'config:GetConformancePackComplianceDetails'
+              - 'config:GetConformancePackComplianceSummary'
+            Resource: '*'
+
+  # Billing Audit Policy (conditional)
+  BillingAuditPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: EnableBillingAccess
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-BillingAuditPolicy'
+      Description: 'Billing and cost data access for audit evidence'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # Cost Explorer permissions
+          - Sid: 'CostExplorerPermissions'
+            Effect: Allow
+            Action:
+              - 'ce:Get*'
+              - 'ce:List*'
+              - 'ce:Describe*'
+            Resource: '*'
+            
+          # Budgets permissions
+          - Sid: 'BudgetsPermissions'
+            Effect: Allow
+            Action:
+              - 'budgets:Describe*'
+              - 'budgets:View*'
+            Resource: '*'
+            
+          # Billing permissions
+          - Sid: 'BillingPermissions'
+            Effect: Allow
+            Action:
+              - 'aws-portal:View*'
+              - 'cur:Describe*'
+              - 'cur:Get*'
+            Resource: '*'
+            
+          # Cost and Usage Report
+          - Sid: 'CostUsageReportPermissions'
+            Effect: Allow
+            Action:
+              - 'cur:DescribeReportDefinitions'
+              - 'cur:GetRightsizingRecommendation'
+              - 'cur:GetDimensionValues'
+              - 'cur:GetReservationCoverage'
+              - 'cur:GetReservationPurchaseRecommendation'
+              - 'cur:GetReservationUtilization'
+              - 'cur:GetSavingsPlansUtilization'
+              - 'cur:GetUsageReport'
+            Resource: '*'
+
+  # Historical Data Policy (conditional)
+  HistoricalDataPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: EnableHistoricalAccess
+    Properties:
+      ManagedPolicyName: !Sub '${RoleName}-HistoricalDataPolicy'
+      Description: 'Historical data access for compliance trends and analysis'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # CloudTrail historical data
+          - Sid: 'CloudTrailHistoricalPermissions'
+            Effect: Allow
+            Action:
+              - 'cloudtrail:Get*'
+              - 'cloudtrail:List*'
+              - 'cloudtrail:Describe*'
+              - 'cloudtrail:LookupEvents'
+            Resource: '*'
+            
+          # CloudWatch historical metrics
+          - Sid: 'CloudWatchHistoricalPermissions'
+            Effect: Allow
+            Action:
+              - 'cloudwatch:Get*'
+              - 'cloudwatch:List*'
+              - 'cloudwatch:Describe*'
+              - 'cloudwatch:GetMetricData'
+              - 'cloudwatch:GetMetricStatistics'
+            Resource: '*'
+            
+          # CloudWatch Logs historical data
+          - Sid: 'CloudWatchLogsHistoricalPermissions'
+            Effect: Allow
+            Action:
+              - 'logs:Describe*'
+              - 'logs:Get*'
+              - 'logs:List*'
+              - 'logs:FilterLogEvents'
+              - 'logs:StartQuery'
+              - 'logs:StopQuery'
+              - 'logs:GetQueryResults'
+              - 'logs:TestMetricFilter'
+            Resource: '*'
+            
+          # X-Ray tracing data
+          - Sid: 'XRayHistoricalPermissions'
+            Effect: Allow
+            Action:
+              - 'xray:Get*'
+              - 'xray:BatchGet*'
+            Resource: '*'
+
+Outputs:
+  RoleArn:
+    Description: 'ARN of the created compliance audit role'
+    Value: !GetAtt ComplianceAuditRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-AuditRoleArn'
+  
+  RoleName:
+    Description: 'Name of the created compliance audit role'
+    Value: !Ref ComplianceAuditRole
+    Export:
+      Name: !Sub '${AWS::StackName}-AuditRoleName'
+  
+  ExternalId:
+    Description: 'External ID used for role assumption'
+    Value: !Ref ExternalId
+    Export:
+      Name: !Sub '${AWS::StackName}-ExternalId'
+  
+  AuditCapabilities:
+    Description: 'Enabled audit capabilities'
+    Value: !Sub |
+      Billing Data Access: ${IncludeBillingData}
+      Historical Data Access: ${IncludeHistoricalData}
+      Session Duration: ${SessionDuration} seconds
+    Export:
+      Name: !Sub '${AWS::StackName}-AuditCapabilities'
+  
+  ComplianceFrameworks:
+    Description: 'Supported compliance frameworks for audit evidence collection'
+    Value: 'SOC 2, HIPAA, GDPR, PCI DSS, ISO 27001, NIST, CIS Controls'
+    Export:
+      Name: !Sub '${AWS::StackName}-ComplianceFrameworks'

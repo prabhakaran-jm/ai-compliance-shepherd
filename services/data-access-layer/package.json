@@ -16,7 +16,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@compliance-shepherd/shared": "workspace:*",
+    "@ai-compliance-shepherd/shared-types": "file:../../shared",
     "aws-sdk": "^2.1500.0",
     "lodash": "^4.17.21",
     "uuid": "^9.0.0"

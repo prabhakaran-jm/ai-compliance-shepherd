@@ -1,0 +1,68 @@
+# Example Terraform Variables File for Enterprise Customer Onboarding
+# Copy this file to terraform.tfvars and customize with your values
+
+# Required Customer Information
+customer_account_id = "123456789012"         # Your AWS Account ID
+customer_name        = "Enterprise Corp"     # Your company name
+customer_email       = "ciso@enterprise.com" # Contact email address
+
+# Enterprise Configuration
+customer_tier        = "ENTERPRISE"          # Enterprise tier with all features
+customer_region      = "us-east-1"          # Primary AWS region
+environment          = "prod"                # Production environment
+
+# Multi-Region Scanning Configuration
+allowed_regions = [
+  "us-east-1",        # Primary US East
+  "us-west-2",        # US West 2
+  "us-west-1",        # US West 1
+  "eu-west-1",        # Europe West
+  "eu-central-1",     # Europe Central
+  "eu-north-1",       # Europe North
+  "ap-southeast-1",   # Asia Pacific Southeast
+  "ap-northeast-1"    # Asia Pacific Northeast
+]
+
+# Advanced Security Settings
+enable_auto_remediation = true               # Enable automatic remediation
+scan_schedule_expression = "rate(6 hours)"   # Frequent scanning every 6 hours
+
+# Notification Settings
+slack_webhook_url = "https://your-slack-webhook-url.example.com/webhook"
+github_repositories = [
+  "Enterprise-Corp/infrastructure",
+  "Enterprise-Corp/applications", 
+  "Enterprise-Corp/security-configs",
+  "Enterprise-Corp/compliance-policies"
+]
+
+# Encryption Configuration
+encryption_key_id = "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"  # Existing KMS key
+
+# Network Security - Restrictive
+trust_boundary_ip_ranges = [
+  "10.0.0.0/8",                           # Corporate network
+  "172.16.0.0/12",                        # Corporate network
+  "192.168.0.0/16",                      # Corporate network
+  "203.0.113.0/32",                      # Specific admin IP
+  "198.51.100.0/24"                      # Office subnet
+]
+
+# Extended Logging and Retention
+log_retention_days = 365                   # 1 year retention for compliance
+
+# Comprehensive Resource Tags
+tags = {
+  Environment           = "production"
+  Project              = "compliance"
+  Department           = "security"
+  CostCenter           = "IT001"
+  Owner                = "security-team"
+  ComplianceFramework  = "SOC2-TYPE-II,GDRP,HIPPA"
+  DataClassification   = "confidential"
+  BackupRequired       = "true"
+  EncryptionRequired   = "true"
+  AutoRemediation     = "enabled"
+  ScanFrequency       = "hourly"
+  SupportLevel        = "enterprise"
+}

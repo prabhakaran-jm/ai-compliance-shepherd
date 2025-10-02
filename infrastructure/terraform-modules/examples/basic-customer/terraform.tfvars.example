@@ -1,0 +1,49 @@
+# Example Terraform Variables File for Basic Customer Onboarding
+# Copy this file to terraform.tfvars and customize with your values
+
+# Required Customer Information
+customer_account_id = "123456789012"         # Your AWS Account ID
+customer_name        = "Example Corp"         # Your company name
+customer_email       = "security@example.com" # Contact email address
+
+# Customer Configuration
+customer_tier        = "STANDARD"             # BASIC, STANDARD, PREMIUM, or ENTERPRISE
+customer_region      = "us-east-1"          # Primary AWS region
+environment          = "prod"                # dev, staging, or prod
+
+# Scanning Configuration
+allowed_regions = [
+  "us-east-1",    # Primary region
+  "us-west-2",    # Secondary region
+  "eu-west-1"     # European region
+]
+
+# Security Settings
+enable_auto_remediation = false              # Enable automatic fixing (start with false)
+scan_schedule_expression = "rate(24 hours)"  # How often to scan: rate(24 hours), rate(12 hours), etc.
+
+# Optional Advanced Settings
+slack_webhook_url = ""                       # Slack notifications (optional)
+github_repositories = []                      # GitHub repos for webhook integration (optional)
+
+# Encryption Configuration
+encryption_key_id = ""                       # Use existing KMS key (optional)
+
+# Network Security
+trust_boundary_ip_ranges = [
+  "10.0.0.0/8",       # Private IPv4 networks
+  "172.16.0.0/12",    # Private IPv4 networks  
+  "192.168.0.0/16"    # Private IPv4 networks
+]
+
+# Logging and Retention
+log_retention_days = 30                      # Days to keep logs
+
+# Resource Tags
+tags = {
+  Environment  = "production"
+  Project      = "compliance"
+  Department   = "security"
+  CostCenter   = "IT001"
+  Owner        = "security-team"
+}

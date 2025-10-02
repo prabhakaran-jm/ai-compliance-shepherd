@@ -1,0 +1,76 @@
+{
+  "name": "@ai-compliance-shepherd/integration-tests",
+  "version": "1.0.0",
+  "description": "Integration tests for AI Compliance Shepherd platform",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false --passWithNoTests",
+    "test:workflows": "jest --testPathPattern=workflows",
+    "test:services": "jest --testPathPattern=services",
+    "test:data-flow": "jest --testPathPattern=data-flow",
+    "test:error-handling": "jest --testPathPattern=error-handling",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "setup": "node setup/setup-localstack.js",
+    "cleanup": "node setup/cleanup.js"
+  },
+  "dependencies": {
+    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@aws-sdk/client-cloudwatch": "^3.450.0",
+    "@aws-sdk/client-dynamodb": "^3.450.0",
+    "@aws-sdk/client-eventbridge": "^3.450.0",
+    "@aws-sdk/client-kms": "^3.450.0",
+    "@aws-sdk/client-lambda": "^3.450.0",
+    "@aws-sdk/client-s3": "^3.450.0",
+    "@aws-sdk/client-secrets-manager": "^3.450.0",
+    "@aws-sdk/client-sfn": "^3.450.0",
+    "@aws-sdk/util-dynamodb": "^3.450.0",
+    "axios": "^1.6.0",
+    "ws": "^8.14.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.9.0",
+    "@types/ws": "^8.5.8",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "jest-html-reporter": "^3.10.2",
+    "jest-junit": "^16.0.0",
+    "prettier": "^3.1.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testTimeout": 60000,
+    "setupFilesAfterEnv": ["<rootDir>/setup/jest.setup.ts"],
+    "testMatch": ["**/*.test.ts"],
+    "collectCoverageFrom": [
+      "../../services/**/*.ts",
+      "../../security/**/*.ts",
+      "../../monitoring/**/*.ts",
+      "../../shared/**/*.ts",
+      "!**/*.d.ts",
+      "!**/node_modules/**",
+      "!**/dist/**",
+      "!**/*.config.ts",
+      "!**/*.test.ts",
+      "!**/*.spec.ts"
+    ],
+    "coverageDirectory": "../reports/coverage/integration",
+    "coverageReporters": ["text", "lcov", "html", "json"],
+    "maxWorkers": 1,
+    "forceExit": true,
+    "detectOpenHandles": true
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}

@@ -1,0 +1,597 @@
+{
+  "framework": "SOC 2 Type II",
+  "version": "2017",
+  "description": "SOC 2 compliance policies for AI Compliance Shepherd platform",
+  "lastUpdated": "2024-01-01T00:00:00Z",
+  "trustServicesCriteria": {
+    "security": {
+      "CC1": {
+        "title": "Control Environment",
+        "description": "The entity demonstrates a commitment to integrity and ethical values",
+        "controls": [
+          {
+            "id": "CC1.1",
+            "description": "COSO Principle 1: The entity demonstrates a commitment to integrity and ethical values",
+            "implementation": {
+              "policies": [
+                "Code of Conduct",
+                "Ethics Policy",
+                "Whistleblower Policy"
+              ],
+              "procedures": [
+                "Annual ethics training",
+                "Background checks for all employees",
+                "Regular policy reviews and updates"
+              ],
+              "evidence": [
+                "Signed code of conduct acknowledgments",
+                "Training completion records",
+                "Policy review meeting minutes"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "compliance-monitoring",
+                "check": "verify_employee_training_completion",
+                "frequency": "monthly"
+              }
+            ]
+          },
+          {
+            "id": "CC1.2",
+            "description": "COSO Principle 2: The board of directors demonstrates independence from management",
+            "implementation": {
+              "policies": [
+                "Board Independence Policy",
+                "Conflict of Interest Policy"
+              ],
+              "procedures": [
+                "Annual independence assessments",
+                "Conflict of interest declarations"
+              ],
+              "evidence": [
+                "Board independence certifications",
+                "Conflict of interest forms"
+              ]
+            }
+          }
+        ]
+      },
+      "CC2": {
+        "title": "Communication and Information",
+        "description": "The entity obtains or generates and uses relevant, quality information",
+        "controls": [
+          {
+            "id": "CC2.1",
+            "description": "COSO Principle 13: The entity obtains or generates and uses relevant, quality information",
+            "implementation": {
+              "policies": [
+                "Information Security Policy",
+                "Data Classification Policy"
+              ],
+              "procedures": [
+                "Regular security assessments",
+                "Data classification reviews"
+              ],
+              "evidence": [
+                "Security assessment reports",
+                "Data classification matrices"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "security-monitoring",
+                "check": "verify_data_classification",
+                "frequency": "daily"
+              }
+            ]
+          }
+        ]
+      },
+      "CC6": {
+        "title": "Logical and Physical Access Controls",
+        "description": "The entity implements logical access security software, infrastructure, and architectures",
+        "controls": [
+          {
+            "id": "CC6.1",
+            "description": "The entity implements logical access security software, infrastructure, and architectures",
+            "implementation": {
+              "policies": [
+                "Access Control Policy",
+                "Identity and Access Management Policy",
+                "Multi-Factor Authentication Policy"
+              ],
+              "procedures": [
+                "User access provisioning and deprovisioning",
+                "Regular access reviews",
+                "MFA enforcement"
+              ],
+              "evidence": [
+                "Access control matrices",
+                "User access review reports",
+                "MFA compliance reports"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "iam-monitoring",
+                "check": "verify_mfa_compliance",
+                "frequency": "daily"
+              },
+              {
+                "service": "access-review",
+                "check": "quarterly_access_review",
+                "frequency": "quarterly"
+              }
+            ]
+          },
+          {
+            "id": "CC6.2",
+            "description": "Prior to issuing system credentials and granting system access, the entity registers and authorizes new internal and external users",
+            "implementation": {
+              "policies": [
+                "User Provisioning Policy",
+                "Background Check Policy"
+              ],
+              "procedures": [
+                "New user onboarding process",
+                "Manager approval for access requests",
+                "Background verification"
+              ],
+              "evidence": [
+                "User provisioning forms",
+                "Manager approval records",
+                "Background check reports"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "user-management",
+                "check": "verify_provisioning_approval",
+                "frequency": "daily"
+              }
+            ]
+          },
+          {
+            "id": "CC6.3",
+            "description": "The entity authorizes, modifies, or removes access to data, software, functions, and other protected information assets",
+            "implementation": {
+              "policies": [
+                "Access Modification Policy",
+                "Least Privilege Policy"
+              ],
+              "procedures": [
+                "Role-based access control",
+                "Regular permission audits",
+                "Automated deprovisioning"
+              ],
+              "evidence": [
+                "Access modification logs",
+                "Permission audit reports",
+                "Deprovisioning records"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "rbac-monitoring",
+                "check": "verify_least_privilege",
+                "frequency": "weekly"
+              }
+            ]
+          },
+          {
+            "id": "CC6.6",
+            "description": "The entity implements logical access security measures to protect against threats from sources outside its system boundaries",
+            "implementation": {
+              "policies": [
+                "Network Security Policy",
+                "Firewall Management Policy",
+                "Intrusion Detection Policy"
+              ],
+              "procedures": [
+                "Firewall rule management",
+                "Intrusion detection monitoring",
+                "Vulnerability scanning"
+              ],
+              "evidence": [
+                "Firewall configuration reviews",
+                "IDS/IPS logs",
+                "Vulnerability scan reports"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "network-security",
+                "check": "verify_firewall_rules",
+                "frequency": "daily"
+              },
+              {
+                "service": "vulnerability-scanner",
+                "check": "weekly_vulnerability_scan",
+                "frequency": "weekly"
+              }
+            ]
+          },
+          {
+            "id": "CC6.7",
+            "description": "The entity restricts the transmission, movement, and removal of information",
+            "implementation": {
+              "policies": [
+                "Data Loss Prevention Policy",
+                "Encryption Policy",
+                "Data Transfer Policy"
+              ],
+              "procedures": [
+                "Data encryption in transit and at rest",
+                "DLP monitoring",
+                "Secure file transfer protocols"
+              ],
+              "evidence": [
+                "Encryption implementation records",
+                "DLP monitoring reports",
+                "Secure transfer logs"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "encryption-monitoring",
+                "check": "verify_encryption_compliance",
+                "frequency": "daily"
+              },
+              {
+                "service": "dlp-monitoring",
+                "check": "data_loss_prevention_scan",
+                "frequency": "continuous"
+              }
+            ]
+          },
+          {
+            "id": "CC6.8",
+            "description": "The entity implements controls to prevent or detect and act upon the introduction of unauthorized or malicious software",
+            "implementation": {
+              "policies": [
+                "Malware Protection Policy",
+                "Software Installation Policy",
+                "Patch Management Policy"
+              ],
+              "procedures": [
+                "Antivirus deployment and monitoring",
+                "Software whitelisting",
+                "Regular security patching"
+              ],
+              "evidence": [
+                "Antivirus status reports",
+                "Software inventory",
+                "Patch management records"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "malware-detection",
+                "check": "verify_antivirus_status",
+                "frequency": "daily"
+              },
+              {
+                "service": "patch-management",
+                "check": "verify_patch_compliance",
+                "frequency": "weekly"
+              }
+            ]
+          }
+        ]
+      },
+      "CC7": {
+        "title": "System Operations",
+        "description": "The entity also designs, develops, and implements controls to provide reasonable assurance",
+        "controls": [
+          {
+            "id": "CC7.1",
+            "description": "To meet its objectives, the entity uses detection and monitoring procedures to identify system capacity issues",
+            "implementation": {
+              "policies": [
+                "System Monitoring Policy",
+                "Capacity Management Policy"
+              ],
+              "procedures": [
+                "Real-time system monitoring",
+                "Capacity planning and forecasting",
+                "Performance threshold alerting"
+              ],
+              "evidence": [
+                "System monitoring dashboards",
+                "Capacity planning reports",
+                "Performance alert logs"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "system-monitoring",
+                "check": "verify_monitoring_coverage",
+                "frequency": "daily"
+              }
+            ]
+          },
+          {
+            "id": "CC7.2",
+            "description": "The entity monitors system components and the operation of controls",
+            "implementation": {
+              "policies": [
+                "Control Monitoring Policy",
+                "Incident Response Policy"
+              ],
+              "procedures": [
+                "Continuous control monitoring",
+                "Automated alerting",
+                "Incident escalation procedures"
+              ],
+              "evidence": [
+                "Control monitoring reports",
+                "Alert response logs",
+                "Incident response records"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "control-monitoring",
+                "check": "verify_control_effectiveness",
+                "frequency": "continuous"
+              }
+            ]
+          }
+        ]
+      },
+      "CC8": {
+        "title": "Change Management",
+        "description": "The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes",
+        "controls": [
+          {
+            "id": "CC8.1",
+            "description": "The entity authorizes, designs, develops or acquires, configures, documents, tests, approves, and implements changes to infrastructure, data, software, and procedures",
+            "implementation": {
+              "policies": [
+                "Change Management Policy",
+                "Software Development Lifecycle Policy"
+              ],
+              "procedures": [
+                "Change approval process",
+                "Testing and validation procedures",
+                "Rollback procedures"
+              ],
+              "evidence": [
+                "Change request forms",
+                "Testing documentation",
+                "Deployment records"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "change-management",
+                "check": "verify_change_approval",
+                "frequency": "daily"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "availability": {
+      "A1": {
+        "title": "Availability",
+        "description": "The entity maintains, monitors, and evaluates current processing capacity",
+        "controls": [
+          {
+            "id": "A1.1",
+            "description": "The entity maintains, monitors, and evaluates current processing capacity and use of system components",
+            "implementation": {
+              "policies": [
+                "Availability Management Policy",
+                "Disaster Recovery Policy"
+              ],
+              "procedures": [
+                "Capacity monitoring",
+                "Performance optimization",
+                "Disaster recovery testing"
+              ],
+              "evidence": [
+                "Capacity reports",
+                "Performance metrics",
+                "DR test results"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "availability-monitoring",
+                "check": "verify_system_availability",
+                "frequency": "continuous"
+              }
+            ]
+          },
+          {
+            "id": "A1.2",
+            "description": "The entity authorizes, designs, develops or acquires, implements, operates, approves, maintains, and monitors environmental protections, software, data backup processes, and recovery infrastructure",
+            "implementation": {
+              "policies": [
+                "Backup Policy",
+                "Environmental Controls Policy"
+              ],
+              "procedures": [
+                "Regular data backups",
+                "Backup testing and validation",
+                "Environmental monitoring"
+              ],
+              "evidence": [
+                "Backup logs",
+                "Restore test results",
+                "Environmental monitoring reports"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "backup-monitoring",
+                "check": "verify_backup_completion",
+                "frequency": "daily"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "processing_integrity": {
+      "PI1": {
+        "title": "Processing Integrity",
+        "description": "The entity implements controls over inputs, processing, and outputs",
+        "controls": [
+          {
+            "id": "PI1.1",
+            "description": "The entity implements controls over inputs, processing, and outputs to provide reasonable assurance that inputs are complete and accurate",
+            "implementation": {
+              "policies": [
+                "Data Validation Policy",
+                "Input Controls Policy"
+              ],
+              "procedures": [
+                "Input validation and sanitization",
+                "Data integrity checks",
+                "Error handling and logging"
+              ],
+              "evidence": [
+                "Validation rule documentation",
+                "Data integrity reports",
+                "Error logs"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "data-validation",
+                "check": "verify_input_validation",
+                "frequency": "continuous"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "confidentiality": {
+      "C1": {
+        "title": "Confidentiality",
+        "description": "The entity identifies and maintains confidential information",
+        "controls": [
+          {
+            "id": "C1.1",
+            "description": "The entity identifies and maintains confidential information to meet the entity's objectives related to confidentiality",
+            "implementation": {
+              "policies": [
+                "Data Classification Policy",
+                "Confidentiality Policy"
+              ],
+              "procedures": [
+                "Data classification procedures",
+                "Confidential data handling",
+                "Access controls for confidential data"
+              ],
+              "evidence": [
+                "Data classification matrices",
+                "Confidentiality agreements",
+                "Access control reports"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "data-classification",
+                "check": "verify_confidential_data_protection",
+                "frequency": "daily"
+              }
+            ]
+          },
+          {
+            "id": "C1.2",
+            "description": "The entity disposes of confidential information to meet the entity's objectives related to confidentiality",
+            "implementation": {
+              "policies": [
+                "Data Retention Policy",
+                "Secure Disposal Policy"
+              ],
+              "procedures": [
+                "Secure data destruction",
+                "Certificate of destruction",
+                "Retention schedule compliance"
+              ],
+              "evidence": [
+                "Destruction certificates",
+                "Retention schedule records",
+                "Disposal logs"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "data-lifecycle",
+                "check": "verify_secure_disposal",
+                "frequency": "monthly"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "privacy": {
+      "P1": {
+        "title": "Privacy",
+        "description": "The entity provides notice about its privacy practices",
+        "controls": [
+          {
+            "id": "P1.1",
+            "description": "The entity provides notice about its privacy practices to enable data subjects to understand the privacy practices",
+            "implementation": {
+              "policies": [
+                "Privacy Policy",
+                "Privacy Notice Policy"
+              ],
+              "procedures": [
+                "Privacy notice publication",
+                "Privacy notice updates",
+                "Consent management"
+              ],
+              "evidence": [
+                "Published privacy notices",
+                "Privacy notice update logs",
+                "Consent records"
+              ]
+            },
+            "automatedChecks": [
+              {
+                "service": "privacy-compliance",
+                "check": "verify_privacy_notice_current",
+                "frequency": "monthly"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "complianceMetrics": {
+    "controlEffectiveness": {
+      "target": 95,
+      "measurement": "percentage_of_controls_operating_effectively"
+    },
+    "incidentResponse": {
+      "target": 24,
+      "measurement": "hours_to_incident_containment"
+    },
+    "accessReview": {
+      "target": 100,
+      "measurement": "percentage_of_users_reviewed_quarterly"
+    },
+    "vulnerabilityRemediation": {
+      "target": 95,
+      "measurement": "percentage_of_critical_vulnerabilities_remediated_within_30_days"
+    }
+  },
+  "auditRequirements": {
+    "frequency": "annual",
+    "auditor": "independent_third_party",
+    "scope": "type_ii_examination",
+    "reportingPeriod": "12_months",
+    "evidenceRetention": "7_years"
+  }
+}

@@ -1,0 +1,291 @@
+{
+  "name": "AIComplianceShepherdCommonRules",
+  "description": "Common WAF rules for AI Compliance Shepherd platform",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "name": "AWSManagedRulesCommonRuleSet",
+      "priority": 1,
+      "statement": {
+        "managedRuleGroupStatement": {
+          "vendorName": "AWS",
+          "name": "AWSManagedRulesCommonRuleSet",
+          "excludedRules": []
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "CommonRuleSetMetric"
+      }
+    },
+    {
+      "name": "AWSManagedRulesKnownBadInputsRuleSet",
+      "priority": 2,
+      "statement": {
+        "managedRuleGroupStatement": {
+          "vendorName": "AWS",
+          "name": "AWSManagedRulesKnownBadInputsRuleSet",
+          "excludedRules": []
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "KnownBadInputsMetric"
+      }
+    },
+    {
+      "name": "AWSManagedRulesAmazonIpReputationList",
+      "priority": 3,
+      "statement": {
+        "managedRuleGroupStatement": {
+          "vendorName": "AWS",
+          "name": "AWSManagedRulesAmazonIpReputationList",
+          "excludedRules": []
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "IpReputationMetric"
+      }
+    },
+    {
+      "name": "AWSManagedRulesAnonymousIpList",
+      "priority": 4,
+      "statement": {
+        "managedRuleGroupStatement": {
+          "vendorName": "AWS",
+          "name": "AWSManagedRulesAnonymousIpList",
+          "excludedRules": []
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "AnonymousIpMetric"
+      }
+    },
+    {
+      "name": "RateLimitRule",
+      "priority": 10,
+      "statement": {
+        "rateBasedStatement": {
+          "limit": 2000,
+          "aggregateKeyType": "IP",
+          "scopeDownStatement": {
+            "notStatement": {
+              "statement": {
+                "ipSetReferenceStatement": {
+                  "arn": "arn:aws:wafv2:us-east-1:ACCOUNT_ID:global/ipset/AllowedIPs/IPSET_ID"
+                }
+              }
+            }
+          }
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "RateLimitMetric"
+      }
+    },
+    {
+      "name": "SQLInjectionRule",
+      "priority": 20,
+      "statement": {
+        "sqliMatchStatement": {
+          "fieldToMatch": {
+            "allQueryArguments": {}
+          },
+          "textTransformations": [
+            {
+              "priority": 1,
+              "type": "URL_DECODE"
+            },
+            {
+              "priority": 2,
+              "type": "HTML_ENTITY_DECODE"
+            }
+          ]
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "SQLInjectionMetric"
+      }
+    },
+    {
+      "name": "XSSRule",
+      "priority": 21,
+      "statement": {
+        "xssMatchStatement": {
+          "fieldToMatch": {
+            "allQueryArguments": {}
+          },
+          "textTransformations": [
+            {
+              "priority": 1,
+              "type": "URL_DECODE"
+            },
+            {
+              "priority": 2,
+              "type": "HTML_ENTITY_DECODE"
+            }
+          ]
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "XSSMetric"
+      }
+    },
+    {
+      "name": "SizeRestrictionRule",
+      "priority": 30,
+      "statement": {
+        "orStatement": {
+          "statements": [
+            {
+              "sizeConstraintStatement": {
+                "fieldToMatch": {
+                  "body": {}
+                },
+                "comparisonOperator": "GT",
+                "size": 8192,
+                "textTransformations": [
+                  {
+                    "priority": 0,
+                    "type": "NONE"
+                  }
+                ]
+              }
+            },
+            {
+              "sizeConstraintStatement": {
+                "fieldToMatch": {
+                  "singleHeader": {
+                    "name": "content-length"
+                  }
+                },
+                "comparisonOperator": "GT",
+                "size": 8192,
+                "textTransformations": [
+                  {
+                    "priority": 0,
+                    "type": "NONE"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "SizeRestrictionMetric"
+      }
+    },
+    {
+      "name": "GeoBlockRule",
+      "priority": 40,
+      "statement": {
+        "geoMatchStatement": {
+          "countryCodes": [
+            "CN",
+            "RU",
+            "KP",
+            "IR"
+          ]
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "GeoBlockMetric"
+      }
+    },
+    {
+      "name": "UserAgentBlockRule",
+      "priority": 50,
+      "statement": {
+        "byteMatchStatement": {
+          "searchString": "bot",
+          "fieldToMatch": {
+            "singleHeader": {
+              "name": "user-agent"
+            }
+          },
+          "textTransformations": [
+            {
+              "priority": 0,
+              "type": "LOWERCASE"
+            }
+          ],
+          "positionalConstraint": "CONTAINS"
+        }
+      },
+      "action": {
+        "block": {}
+      },
+      "visibilityConfig": {
+        "sampledRequestsEnabled": true,
+        "cloudWatchMetricsEnabled": true,
+        "metricName": "UserAgentBlockMetric"
+      }
+    }
+  ],
+  "defaultAction": {
+    "allow": {}
+  },
+  "visibilityConfig": {
+    "sampledRequestsEnabled": true,
+    "cloudWatchMetricsEnabled": true,
+    "metricName": "AIComplianceShepherdWAF"
+  },
+  "tags": [
+    {
+      "key": "Service",
+      "value": "AIComplianceShepherd"
+    },
+    {
+      "key": "Environment",
+      "value": "Production"
+    },
+    {
+      "key": "Purpose",
+      "value": "WebApplicationFirewall"
+    }
+  ]
+}

@@ -1,29 +1,71 @@
 {
   "name": "@ai-compliance-shepherd/infrastructure-cdk",
   "version": "1.0.0",
-  "description": "Infrastructure as Code for AI Compliance Shepherd",
-  "private": true,
+  "description": "AWS CDK Infrastructure for AI Compliance Shepherd Platform",
+  "main": "lib/infrastructure-cdk.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "deploy": "cdk deploy --all",
-    "destroy": "cdk destroy --all",
+    "deploy": "npm run build && cdk deploy",
+    "deploy-cdk": "npm run build && cdk deploy --app 'npx ts-node app.ts'",
+    "diff": "cdk diff",
     "synth": "cdk synth",
-    "diff": "cdk diff"
-  },
-  "devDependencies": {
-    "@types/jest": "^29.0.0",
-    "@types/node": "^20.0.0",
-    "jest": "^29.0.0",
-    "ts-jest": "^29.0.0",
-    "typescript": "^5.0.0",
-    "aws-cdk": "^2.100.0",
-    "constructs": "^10.0.0"
+    "destroy": "cdk destroy",
+    "bootstrap": "cdk bootstrap",
+    "deploy:dev": "npm run build && cdk deploy --app 'npx ts-node app.ts' --context environment=dev",
+    "deploy:staging": "npm run build && cdk deploy --app 'npx ts-node app.ts' --context environment=staging",
+    "deploy:prod": "npm run build && cdk deploy --app 'npx ts-node app.ts' --context environment=prod"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.100.0",
+    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@aws-cdk/aws-apigateway": "^2.136.1",
+    "@aws-cdk/aws-dynamodb": "^2.136.1",
+    "@aws-cdk/aws-lambda": "^2.136.1",
+    "@aws-cdk/aws-lambda-nodejs": "^2.136.1",
+    "@aws-cdk/aws-s3": "^2.136.1",
+    "@aws-cdk/aws-s3-notifications": "^2.136.1",
+    "@aws-cdk/aws-iam": "^2.136.1",
+    "@aws-cdk/aws-kms": "^2.136.1",
+    "@aws-cdk/aws-logs": "^2.136.1",
+    "@aws-cdk/aws-stepfunctions": "^2.136.1",
+    "@aws-cdk/aws-stepfunctions-tasks": "^2.136.1",
+    "@aws-cdk/aws-events": "^2.136.1",
+    "@aws-cdk/aws-events-targets": "^2.136.1",
+    "@aws-cdk/aws-bedrock": "^2.136.1",
+    "@aws-cdk/aws-sns": "^2.136.1",
+    "@aws-cdk/aws-sqs": "^2.136.1",
+    "@aws-cdk/aws-cloudwatch": "^2.136.1",
+    "@aws-cdk/aws-cloudwatch-actions": "^2.136.1",
+    "@aws-cdk/aws-cloudfront": "^2.136.1",
+    "@aws-cdk/aws-cloudfront-origins": "^2.136.1",
+    "@aws-cdk/aws-cognito": "^2.136.1",
+    "@aws-cdk/core": "^2.136.1",
+    "@aws-cdk/constructs": "^10.0.0",
+    "aws-cdk-lib": "^2.136.1",
     "constructs": "^10.0.0"
-  }
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.129",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.10.0",
+    "aws-cdk": "^2.136.1",
+    "jest": "^29.7.0",
+    "source-map-support": "^0.5.21",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  },
+  "jest": {
+    "preset": "jest"
+  },
+  "keywords": [
+    "aws-cdk",
+    "infrastructure",
+    "compliance",
+    "security",
+    "serverless"
+  ],
+  "author": "AI Compliance Shepherd Team",
+  "license": "MIT"
 }

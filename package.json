@@ -8,7 +8,14 @@
     "build:services": "npm run build --workspaces --if-present",
     "build:infra": "cd infra/cdk && npm run build",
     "deploy": "cd infra/cdk && npm run deploy",
-    "test": "npm run test --workspaces --if-present",
+    "test": "cd testing && npm run test",
+    "test:unit": "cd testing && npm run test:unit",
+    "test:integration": "cd testing && npm run test:integration",
+    "test:e2e": "cd testing && npm run test:e2e",
+    "test:all": "cd testing && npm run test:all",
+    "test:coverage": "cd testing && npm run test:unit:coverage",
+    "test:setup": "cd testing && chmod +x scripts/*.sh && ./scripts/setup-test-environment.sh",
+    "test:ci": "cd testing && ./scripts/run-all-tests.sh --include-security",
     "lint": "eslint . --ext .ts,.js",
     "format": "prettier --write .",
     "seed-demo": "node scripts/seed-demo.js"
@@ -16,6 +23,10 @@
   "workspaces": [
     "shared",
     "services/*",
+    "security/*",
+    "monitoring/*",
+    "infrastructure/*",
+    "testing",
     "ui/*",
     "infra/*"
   ],

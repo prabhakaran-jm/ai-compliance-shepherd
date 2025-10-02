@@ -6,8 +6,8 @@ Welcome to the comprehensive documentation for the AI Compliance Shepherd platfo
 
 ### 🚀 Getting Started
 - **[Deployment Guide](deployment-guide.md)** - Complete platform deployment instructions
-- **[Quick Start Guide](quick-start.md)** - Get up and running in 15 minutes
-- **[Demo Setup](demo-setup.md)** - Set up demonstration environment
+- **[Architecture Overview](architecture-overview.md)** - System architecture and design principles  
+- **[API Reference](architecture/api-reference.md)** - Complete API documentation
 
 ### 🏗️ Technical Documentation
 - **[Architecture Overview](architecture-overview.md)** - System architecture and design principles
@@ -17,21 +17,14 @@ Welcome to the comprehensive documentation for the AI Compliance Shepherd platfo
 - **[Monitoring Guide](monitoring-guide.md)** - Observability and performance monitoring
 
 ### 👥 User Guides
-- **[User Manual](user-manual.md)** - Complete user guide for all features
-- **[Administrator Guide](administrator-guide.md)** - Platform administration
-- **[Compliance Frameworks](compliance-frameworks.md)** - SOC 2, HIPAA, PCI-DSS guidance
-- **[Best Practices](best-practices.md)** - Platform usage recommendations
-
-### 🔧 Developer Resources
-- **[Development Guide](development-guide.md)** - Setting up development environment
-- **[API Integration](api-integration.md)** - Integrating with external systems
-- **[Custom Rules](custom-rules.md)** - Creating custom compliance rules
-- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
-
-### 📊 Diagrams & Visualizations
-- **[System Architecture Diagrams](diagrams/)** - Visual system architecture
-- **[Workflow Diagrams](workflows/)** - Process and data flow diagrams
-- **[Entity Relationship Diagrams](architecture/erd/)** - Database relationships
+    - **[User Manual](user-manual.md)** - Complete user guide for all features
+    - **[Administrator Guide](administrator-guide.md)** - Platform administration
+    
+    ### 📊 Visual Documentation
+    - **[System Architecture Diagrams](diagrams/)** - Visual system architecture with Mermaid diagrams
+    - **[AI Workflow](diagrams/ai-workflow.mermaid)** - AI agent processing workflow
+    - **[Data Flow](diagrams/data-flow.mermaid)** - Platform data flow visualization
+    - **[Security Architecture](diagrams/security-architecture.mermaid)** - Security controls architecture
 
 ## 🎯 Quick Navigation
 
@@ -39,13 +32,13 @@ Welcome to the comprehensive documentation for the AI Compliance Shepherd platfo
 → [Deployment Guide](deployment-guide.md) → [Administrator Guide](administrator-guide.md) → [Monitoring Guide](monitoring-guide.md)
 
 ### For End Users
-→ [User Manual](user-manual.md) → [Compliance Frameworks](compliance-frameworks.md) → [Best Practices](best-practices.md)
+→ [User Manual](user-manual.md) → [Architecture Overview](architecture-overview.md) → [Deployment Guide](deployment-guide.md)
 
 ### For Developers
-→ [Development Guide](development-guide.md) → [API Reference](architecture/api-reference.md) → [Custom Rules](custom-rules.md)
+→ [Architecture Overview](architecture-overview.md) → [API Reference](architecture/api-reference.md) → [Administrator Guide](administrator-guide.md)
 
 ### For Enterprise Buyers
-→ [Architecture Overview](architecture-overview.md) → [Security Architecture](security-architecture.md) → [Compliance Documentation](compliance-frameworks.md)
+→ [Architecture Overview](architecture-overview.md) → [User Manual](user-manual.md) → [Deployment Guide](deployment-guide.md)
 
 ## 📋 Overview
 
@@ -110,17 +103,17 @@ For detailed instructions, see the [Complete Deployment Guide](deployment-guide.
 
 ### Documentation Issues
 - Create an issue in the GitHub repository
-- Check the [Troubleshooting Guide](troubleshooting.md) for common problems
+- Check the [Architecture Overview](architecture-overview.md) for technical details
 
 ### Technical Support
-- Review the [Development Guide](development-guide.md) for technical details
-- Check [API Reference](architecture/api-reference.md) for integration help
-- See [Monitoring Guide](monitoring-guide.md) for observability questions
+- Review the [API Reference](architecture/api-reference.md) for integration help
+- Check [User Manual](user-manual.md) for usage guidance
+- See [Administrator Guide](administrator-guide.md) for platform management
 
 ### Enterprise Support
-- Contact your account manager for enterprise-specific guidance
-- Reference [Security Architecture](security-architecture.md) for compliance questions
-- Use [Administrator Guide](administrator-guide.md) for platform management
+- Reference [Deployment Guide](deployment-guide.md) for enterprise deployment
+- Use [Architecture Overview](architecture-overview.md) for compliance questions
+- Contact repository maintainers for enterprise-specific guidance
 
 ## 🔄 Documentation Updates
 

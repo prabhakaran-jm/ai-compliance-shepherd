@@ -22,7 +22,14 @@
     "demo:benchmarks": "node scripts/performance-benchmarks.js",
     "lint": "eslint . --ext .ts,.js",
     "format": "prettier --write .",
-    "demo:generate-all": "npm run demo:data && npm run demo:scenarios && npm run demo:benchmarks"
+    "demo:generate-all": "npm run demo:data && npm run demo:scenarios && npm run demo:benchmarks",
+    "demo:optimize": "node scripts/demo-optimization.js",
+    "demo:scenario-setup": "node scripts/demo-scenarios.js",
+    "demo:prepare": "chmod +x scripts/*.sh && node scripts/demo-optimization.js && node scripts/demo-scenarios.js",
+    "demo:deploy-strategy": "./scripts/test-and-deploy-strategy.sh",
+    "demo:validate": "./scripts/test-and-deploy-strategy.sh validate",
+    "demo:deploy-minimal": "./scripts/test-and-deploy-strategy.sh deploy",
+    "demo:full-setup": "npm run demo:prepare && ./scripts/test-and-deploy-strategy.sh all"
   },
   "workspaces": [
     "shared",

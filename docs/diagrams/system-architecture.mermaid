@@ -1,0 +1,131 @@
+graph TB
+    %% User Interfaces
+    subgraph "Presentation Layer"
+        WEB["Web UI<br/>(React SPA)"]
+        API_GW["API Gateway<br/>(REST Endpoints)"]
+        MOBILE["Mobile Access<br/>(Responsive)"]
+    end
+
+    %% Orchestration Layer
+    subgraph "Orchestration Layer"
+        EVENT["EventBridge<br/>(Event Management)"]
+        STEP["Step Functions<br/>(Workflow Engine)"]
+        SCHEDULER["Scheduler<br/>(Cron Jobs)"]
+    end
+
+    %% Business Logic Layer
+    subgraph "Business Logic Layer"
+        subgraph "Core Services"
+            SCAN["ScanEnvironmentService"]
+            FIND["FindingsStorageService"]
+            REPORT["HTMLReportGenerator"]
+            ANALYZE["TerraformAnalyzer"]
+        end
+        
+        subgraph "AI Services"
+            CHAT["ChatInterfaceService"]
+            AGENT["BedrockAgentService"]
+            KB["BedrockKnowledgeBase"]
+        end
+        
+        subgraph "Automation Services"
+            FIX["ApplyFixService"]
+            WEBHOOK["GitHubWebhookHandler"]
+            SLACK["SlackNotificationsService"]
+            AUDIT["AuditPackGenerator"]
+        end
+        
+        subgraph "Management Services"
+            TENANT["TenantManagementService"]
+            S3_MGR["S3BucketManagerService"]
+            KMS_MGR["KMSEncryptionService"]
+        end
+    end
+
+    %% Data Layer
+    subgraph "Data Layer"
+        DDB["DynamoDB<br/>(15+ Tables)"]
+        S3["S3 Buckets<br/>(Reports, Artifacts)"]
+        KMS["KMS<br/>(Encryption Keys)"]
+        SECRETS["Secrets Manager<br/>(Credentials)"]
+    end
+
+    %% External Services
+    subgraph "External Services"
+        AWS["AWS Services<br/>(Scanning Targets)"]
+        GITHUB["GitHub<br/>(IaC Scanning)"]
+        SLACK_EXT["Slack<br/>(Notifications)"]
+        COGNITO["Cognito<br/>(Authentication)"]
+    end
+
+    %% Monitoring
+    subgraph "Monitoring & Observability"
+        CW["CloudWatch<br/>(Metrics & Logs)"]
+        XRAY["X-Ray<br/>(Tracing)"]
+        ALERTS["Alerts & Dashboards"]
+    end
+
+    %% Connections
+    WEB --> API_GW
+    MOBILE --> API_GW
+    API_GW --> SCAN
+    API_GW --> FIND
+    API_GW --> CHAT
+    API_GW --> TENANT
+
+    EVENT --> STEP
+    EVENT --> SCAN
+    EVENT --> SLACK
+    SCHEDULER --> EVENT
+
+    STEP --> SCAN
+    STEP --> FIND
+    STEP --> REPORT
+    STEP --> FIX
+
+    SCAN --> AWS
+    SCAN --> DDB
+    FIND --> DDB
+    REPORT --> S3
+    AUDIT --> S3
+    AUDIT --> DDB
+
+    CHAT --> AGENT
+    AGENT --> KB
+    AGENT --> STEP
+
+    WEBHOOK --> ANALYZE
+    WEBHOOK --> GITHUB
+    SLACK --> SLACK_EXT
+
+    FIX --> AWS
+    KMS_MGR --> KMS
+    S3_MGR --> S3
+
+    API_GW --> COGNITO
+    TENANT --> SECRETS
+
+    %% Monitoring connections
+    SCAN --> CW
+    FIND --> CW
+    REPORT --> CW
+    CHAT --> CW
+    AGENT --> CW
+    API_GW --> XRAY
+    DDB --> XRAY
+    S3 --> CW
+
+    %% Styling
+    classDef presentation fill:#e1f5fe
+    classDef orchestration fill:#f3e5f5
+    classDef business fill:#e8f5e8
+    classDef data fill:#fff3e0
+    classDef external fill:#fce4ec
+    classDef monitoring fill:#f1f8e9
+
+    class WEB,API_GW,MOBILE presentation
+    class EVENT,STEP,SCHEDULER orchestration
+    class SCAN,FIND,REPORT,CHAT,AGENT,KB,FIX,WEBHOOK,SLACK,AUDIT,TENANT,S3_MGR,KMS_MGR business
+    class DDB,S3,KMS,SECRETS data
+    class AWS,GITHUB,SLACK_EXT,COGNITO external
+    class CW,XRAY,ALERTS monitoring

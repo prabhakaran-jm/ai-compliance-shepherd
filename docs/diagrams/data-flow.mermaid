@@ -1,0 +1,89 @@
+graph LR
+    %% Data Sources
+    subgraph "Data Sources"
+        AWS_RESOURCES["AWS Resources<br/>(S3, IAM, EC2, etc.)"]
+        TERRAFORM["Terraform Plans<br/>(GitHub)"]
+        USER_ACTIONS["User Actions<br/>(Web UI)"]
+        EXTERNAL_API["External APIs<br/>(Slack, GitHub)"]
+    end
+
+    %% Data Collection
+    subgraph "Data Collection"
+        RESOURCE_DISCOVERY["Resource Discovery<br/>(AWS APIs)"]
+        RULE_EVALUATION["Rule Evaluation<br/>(Compliance Engine)"]
+        WEBHOOK_RECEIVER["Webhook Receiver<br/>(GitHub/Terraform)"]
+        USER_INPUT["User Input<br/>(Manual Entry)"]
+    end
+
+    %% Data Processing
+    subgraph "Data Processing"
+        FINDINGS_CREATOR["Findings Creator<br/>(Issue Identification)"]
+        AI_PROCESSOR["AI Processor<br/>(Bedrock Agent)"]
+        DEDUPLICATION["Deduplication<br/>(Smart Matching)"]
+        SEVERITY_CALC["Severity Calculation<br/>(Risk Assessment)"]
+    end
+
+    %% Data Storage
+    subgraph "Data Storage"
+        FINDINGS_TBL["Findings Table<br/>(DynamoDB)"]
+        SCAN_TBL["Scan Jobs Table<br/>(DynamoDB)"]
+        AUDIT_TBL["Audit Logs Table<br/>(DynamoDB)"]
+        REPORTS_S3["Reports S3<br/>(Documents)"]
+        ARTIFACTS_S3["Artifacts S3<br/>(Evidence)"]
+    end
+
+    %% Data Output
+    subgraph "Data Output"
+        DASHBOARD["Dashboard Views<br/>(Real-time UI)"]
+        REPORTS["Generated Reports<br/>(PDF/HTML)"]
+        NOTIFICATIONS["Notifications<br/>(Email/Slack)"]
+        AI_RESPONSES["AI Responses<br/>(Chat Interface)"]
+        AUDIT_PACKS["Audit Packs<br/>(Evidence Package)"]
+    end
+
+    %% Data Flow Connections
+    AWS_RESOURCES --> RESOURCE_DISCOVERY
+    TERRAFORM --> WEBHOOK_RECEIVER
+    USER_ACTIONS --> USER_INPUT
+    EXTERNAL_API --> WEBHOOK_RECEIVER
+
+    RESOURCE_DISCOVERY --> RULE_EVALUATION
+    WEBHOOK_RECEIVER --> RULE_EVALUATION
+    USER_INPUT --> RULE_EVALUATION
+
+    RULE_EVALUATION --> FINDINGS_CREATOR
+    RULE_EVALUATION --> AI_PROCESSOR
+    
+    FINDINGS_CREATOR --> DEDUPLICATION
+    DEDUPLICATION --> SEVERITY_CALC
+    SEVERITY_CALC --> FINDINGS_TBL
+    
+    AI_PROCESSOR --> DEDUPLICATION
+    
+    RULE_EVALUATION --> SCAN_TBL
+    USER_INPUT --> AUDIT_TBL
+
+    FINDINGS_TBL --> DASHBOARD
+    FINDINGS_TBL --> REPORTS
+    SCAN_TBL --> REPORTS
+    AUDIT_TBL --> AUDIT_PACKS
+    
+    DASHBOARD --> AI_RESPONSES
+    ARTIFACTS_S3 --> REPORTS
+    ARTIFACTS_S3 --> AUDIT_PACKS
+    
+    REPORTS --> REPORTS_S3
+    REPORTS_S3 --> NOTIFICATIONS
+    
+    %% Styling
+    classDef sources fill:#e3f2fd
+    classDef collection fill:#f3e5f5
+    classDef processing fill:#e8f5e8
+    classDef storage fill:#fff3e0
+    classDef output fill:#fce4ec
+
+    class AWS_RESOURCES,TERRAFORM,USER_ACTIONS,EXTERNAL_API sources
+    class RESOURCE_DISCOVERY,RULE_EVALUATION,WEBHOOK_RECEIVER,USER_INPUT collection
+    class FINDINGS_CREATOR,AI_PROCESSOR,DEDUPLICATION,SEVERITY_CALC processing
+    class FINDINGS_TBL,SCAN_TBL,AUDIT_TBL,REPORTS_S3,ARTIFACTS_S3 storage
+    class DASHBOARD,REPORTS,NOTIFICATIONS,AI_RESPONSES,AUDIT_PACKS output

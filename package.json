@@ -6,8 +6,8 @@
   "scripts": {
     "build": "npm run build:services && npm run build:infra",
     "build:services": "npm run build --workspaces --if-present",
-    "build:infra": "cd infra/cdk && npm run build",
-    "deploy": "cd infra/cdk && npm run deploy",
+    "build:infra": "cd infrastructure/cdk && npm run build",
+    "deploy": "cd infrastructure/cdk && npm run deploy",
     "test": "cd testing && npm run test",
     "test:unit": "cd testing && npm run test:unit",
     "test:integration": "cd testing && npm run test:integration",
@@ -27,8 +27,7 @@
     "monitoring/*",
     "infrastructure/*",
     "testing",
-    "ui/*",
-    "infra/*"
+    "ui/*"
   ],
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-shepherd/infra",
+  "name": "@ai-compliance-shepherd/infrastructure-cdk",
   "version": "1.0.0",
   "description": "Infrastructure as Code for AI Compliance Shepherd",
   "private": true,

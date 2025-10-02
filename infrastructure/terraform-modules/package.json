@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-shepherd/terraform",
+  "name": "@ai-compliance-shepherd/terraform-modules",
   "version": "1.0.0",
   "description": "Terraform modules for AI Compliance Shepherd",
   "private": true,

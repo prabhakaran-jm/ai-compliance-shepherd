@@ -1,0 +1,58 @@
+{
+  "name": "@ai-compliance-shepherd/audit-pack-generator",
+  "version": "1.0.0",
+  "description": "Audit pack generator for comprehensive compliance evidence collection",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist",
+    "package": "npm run build && zip -r audit-pack-generator.zip dist/"
+  },
+  "dependencies": {
+    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@ai-compliance-shepherd/data-access-layer": "file:../data-access-layer",
+    "@aws-sdk/client-s3": "^3.450.0",
+    "@aws-sdk/client-dynamodb": "^3.450.0",
+    "@aws-sdk/client-lambda": "^3.450.0",
+    "@aws-sdk/client-sts": "^3.450.0",
+    "@aws-sdk/client-cloudtrail": "^3.450.0",
+    "@aws-sdk/client-config-service": "^3.450.0",
+    "archiver": "^6.0.1",
+    "pdf-lib": "^1.17.1",
+    "handlebars": "^4.7.8",
+    "markdown-it": "^13.0.2",
+    "jszip": "^3.10.1",
+    "uuid": "^9.0.1",
+    "zod": "^3.22.4",
+    "date-fns": "^2.30.0",
+    "csv-writer": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.126",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.9.0",
+    "@types/uuid": "^9.0.7",
+    "@types/archiver": "^6.0.2",
+    "@types/markdown-it": "^13.0.7",
+    "@typescript-eslint/eslint-plugin": "^6.12.0",
+    "@typescript-eslint/parser": "^6.12.0",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/src", "<rootDir>/tests"],
+    "testMatch": ["**/__tests__/**/*.ts", "**/?(*.)+(spec|test).ts"],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts"
+    ]
+  }
+}

@@ -16,9 +16,13 @@
     "test:coverage": "cd testing && npm run test:unit:coverage",
     "test:setup": "cd testing && chmod +x scripts/*.sh && ./scripts/setup-test-environment.sh",
     "test:ci": "cd testing && ./scripts/run-all-tests.sh --include-security",
+    "demo:data": "node scripts/seed-demo-data.js",
+    "demo:deploy": "node scripts/deploy-demo-environment.js",
+    "demo:scenarios": "node scripts/test-scenarios.js",
+    "demo:benchmarks": "node scripts/performance-benchmarks.js",
     "lint": "eslint . --ext .ts,.js",
     "format": "prettier --write .",
-    "seed-demo": "node scripts/seed-demo.js"
+    "demo:generate-all": "npm run demo:data && npm run demo:scenarios && npm run demo:benchmarks"
   },
   "workspaces": [
     "shared",

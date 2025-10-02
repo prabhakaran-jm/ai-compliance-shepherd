@@ -1,0 +1,477 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Marketplace Integration Infrastructure for AI Compliance Shepherd'
+
+Parameters:
+  Environment:
+    Description: 'Environment name (dev, staging, prod)'
+    Type: String
+    Default: 'prod'
+    AllowedValues: ['dev', 'staging', 'prod']
+
+  MarketplaceProductCode:
+    Description: 'AWS Marketplace product code'
+    Type: String
+    Default: 'ai-compliance-shepherd'
+
+  MarketplaceSecretToken:
+    Description: 'Secret token for webhook verification'
+    Type: String
+    Default: 'CHANGE_ME_SECURE_TOKEN'
+
+Conditions:
+  IsProduction: !Equals [!Ref Environment, 'prod']
+  IsDevelopment: !Equals [!Ref Environment, 'dev']
+
+Resources:
+  # DynamoDB Tables for Marketplace Data
+  
+  CustomerTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'ai-compliance-${Environment}-customers'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: customerIdentifier
+          AttributeType: S
+        - AttributeName: subscriptionId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customerIdentifier
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: SubscriptionIndex
+          KeySchema:
+            - AttributeName: subscriptionId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: marketplace-integration
+
+  SubscriptionTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'ai-compliance-${Environment}-subscriptions'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: customerIdentifier
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CustomerSubscriptionsIndex
+          KeySchema:
+            - AttributeName: customerIdentifier
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: StatusIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: marketplace-integration
+
+  UsageTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'ai-compliance-${Environment}-usage'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: subscriptionId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: subscriptionId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Service
+          Value: marketplace-integration
+
+  # Lambda Functions for Marketplace Integration
+
+  MarketplaceWebhookFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'ai-compliance-${Environment}-marketplace-webhook'
+      Runtime: nodejs18.x
+      Handler: marketplace-webhook.handler
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            return { statusCode: 200, body: 'Marketplace webhook handler' };
+          };
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          MARKETPLACE_PRODUCT_CODE: !Ref MarketplaceProductCode
+          MARKETPLACE_SECRET_TOKEN: !Ref MarketplaceSecretToken
+          CUSTOMER_TABLE: !Ref CustomerTable
+          SUBSCRIPTION_TABLE: !Ref SubscriptionTable
+          USAGE_TABLE: !Ref UsageTable
+          AWS_REGION: !Ref AWS::Region
+          LOG_LEVEL: INFO
+      Role: !GetAtt MarketplaceWebhookRole.Arn
+      Description: 'Handles AWS Marketplace webhook events'
+      Tags:
+        Environment: !Ref Environment
+        Service: marketplace-integration
+
+  SubscriptionManagementFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'ai-compliance-${Environment}-subscription-management'
+      Runtime: nodejs18.x
+      Handler: subscription-management.handler
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            return { statusCode: 200, body: 'Subscription management handler' };
+          };
+      MemorySize: 1024
+      Timeout: 60
+      Environment:
+        Variables:
+          MARKETPLACE_PRODUCT_CODE: !Ref MarketplaceProductCode
+          CUSTOMER_TABLE: !Ref CustomerTable
+          SUBSCRIPTION_TABLE: !Ref SubscriptionTable
+          AWS_REGION: !Ref AWS::Region
+          LOG_LEVEL: INFO
+      Role: !GetAtt SubscriptionManagementRole.Arn
+      Description: 'Manages marketplace subscriptions'
+      Tags:
+        Environment: !Ref Environment
+        Service: marketplace-integration
+
+  MarketplaceMeteringFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'ai-compliance-${Environment}-marketplace-metering'
+      Runtime: nodejs18.x
+      Handler: marketplace-metering.handler
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            return { statusCode: 200, body: 'Marketplace metering handler' };
+          };
+      MemorySize: 1024
+      Timeout: 60
+      Environment:
+        Variables:
+          MARKETPLACE_PRODUCT_CODE: !Ref MarketplaceProductCode
+          SUBSCRIPTION_TABLE: !Ref SubscriptionTable
+          USAGE_TABLE: !Ref UsageTable
+          AWS_REGION: !Ref AWS::Region
+          LOG_LEVEL: INFO
+      Role: !GetAtt MarketplaceMeteringRole.Arn
+      Description: 'Handles marketplace usage metering'
+      Tags:
+        Environment: !Ref Environment
+        Service: marketplace-integration
+
+  # IAM Roles for Lambda Functions
+
+  MarketplaceWebhookRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ai-compliance-${Environment}-marketplace-webhook-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt CustomerTable.Arn
+                  - !GetAtt SubscriptionTable.Arn
+                  - !GetAtt UsageTable.Arn
+        - PolicyName: MarketplaceAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - marketplace:*Meter*
+                  - marketplace:*Usage*
+                Resource: '*'
+        - PolicyName: BasicLambdaExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ai-compliance-${Environment}-marketplace-webhook*'
+
+  SubscriptionManagementRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ai-compliance-${Environment}-subscription-management-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:DeleteItem
+                Resource:
+                  - !GetAtt CustomerTable.Arn
+                  - !GetAtt SubscriptionTable.Arn
+        - PolicyName: BasicLambdaExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ai-compliance-${Environment}-subscription-management*'
+
+  MarketplaceMeteringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'ai-compliance-${Environment}-marketplace-metering-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                Resource:
+                  - !GetAtt SubscriptionTable.Arn
+                  - !GetAtt UsageTable.Arn
+        - PolicyName: MarketplaceAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - marketplace:*Meter*
+                  - marketplace:*Usage*
+                  - marketplace:*Entitlement*
+                Resource: '*'
+        - PolicyName: BasicLambdaExecution
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/ai-compliance-${Environment}-marketplace-metering*'
+
+  # EventBridge Rule for Marketplace Events
+
+  MarketplaceEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub 'ai-compliance-${Environment}-marketplace-events'
+      Description: 'Capture marketplace subscription and entitlement events'
+      EventPattern:
+        source:
+          - aws.marketplace
+        detail-type:
+          - Marketplace Subscription Notification
+          - Marketplace Entitlement Notification
+          - Marketplace Usage Notification
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt MarketplaceWebhookFunction.Arn
+          Id: MarketplaceWebhookTarget
+          InputTransformer:
+            InputPathsMap:
+              subscriptionEvent: $.detail.subscriptionEvent
+              entitlementEvent: $.detail.entitlementEvent
+            InputTemplate: |
+              {
+                "subscriptionEvent": "<subscriptionEvent>",
+                "entitlementEvent": "<entitlementEvent>"
+              }
+
+  MarketplaceEventRuleTargetPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref MarketplaceWebhookFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt MarketplaceEventRule.Arn
+
+  # CloudWatch Log Groups
+
+  MarketplaceWebhookLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/ai-compliance-${Environment}-marketplace-webhook'
+      RetentionInDays: !If [IsProduction, 30, 7]
+
+  SubscriptionManagementLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/ai-compliance-${Environment}-subscription-management'
+      RetentionInDays: !If [IsProduction, 30, 7]
+
+  MarketplaceMeteringLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/ai-compliance-${Environment}-marketplace-metering'
+      RetentionInDays: !If [IsProduction, 30, 7]
+
+  # CloudWatch Alarms for Marketplace Services
+
+  MarketplaceWebhookErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'ai-compliance-${Environment}-marketplace-webhook-errors'
+      AlarmDescription: 'Marketplace webhook processing errors'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref MarketplaceWebhookFunction
+      TreatMissingData: notBreaching
+
+  MarketplaceSubscriptionErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub 'ai-compliance-${Environment}-marketplace-subscription-errors'
+      AlarmDescription: 'Marketplace subscription management errors'
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref SubscriptionManagementFunction
+      TreatMissingData: notBreaching
+
+Outputs:
+  MarketplaceProductCode:
+    Description: 'AWS Marketplace Product Code'
+    Value: !Ref MarketplaceProductCode
+    Export:
+      Name: !Sub '${AWS::StackName}-ProductCode'
+
+  CustomerTable:
+    Description: 'DynamoDB Customer Table'
+    Value: !Ref CustomerTable
+    Export:
+      Name: !Sub '${AWS::StackName}-CustomerTable'
+
+  SubscriptionTable:
+    Description: 'DynamoDB Subscription Table'
+    Value: !Ref SubscriptionTable
+    Export:
+      Name: !Sub '${AWS::StackName}-SubscriptionTable'
+
+  UsageTable:
+    Description: 'DynamoDB Usage Table'
+    Value: !Ref UsageTable
+    Export:
+      Name: !Sub '${AWS::StackName}-UsageTable'
+
+  MarketplaceWebhookFunctionArn:
+    Description: 'Marketplace Webhook Lambda Function ARN'
+    Value: !GetAtt MarketplaceWebhookFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-WebhookFunctionArn'
+
+  MarketplaceEnvironment:
+    Description: 'Environment Configuration'
+    Value: 
+      Environment: !Ref Environment
+
+      CustomerTable: !Ref CustomerTable
+      SubscriptionTable: !Ref SubscriptionTable
+      UsageTable: !Ref UsageTable
+      WebhookFunction: !GetAtt MarketplaceWebhookFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-Environment'

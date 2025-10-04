@@ -34,7 +34,7 @@ AI Compliance Shepherd is a **fully autonomous AI agent** that transforms AWS co
 ### **Core AWS Services**
 - **🤖 Amazon Bedrock AgentCore** - Autonomous agent capabilities with reasoning
 - **🧠 Amazon Bedrock** - LLM hosting (Claude, GPT, Nova) and Knowledge Bases
-- **⚡ AWS Lambda** - 31 serverless functions for microservices architecture
+- **⚡ AWS Lambda** - 19 microservices for serverless architecture
 - **🗄️ Amazon DynamoDB** - 15 tables for multi-tenant data storage
 - **🪣 Amazon S3** - Secure storage for reports, artifacts, and configurations
 - **🔗 AWS API Gateway** - RESTful APIs with authentication and rate limiting
@@ -50,7 +50,7 @@ AI Compliance Shepherd is a **fully autonomous AI agent** that transforms AWS co
 
 ```
 ai-compliance-shepherd/
-├── services/                         # 31 Lambda Functions
+├── services/                         # 19 Microservices
 │   ├── scan-environment/            # Multi-region AWS resource discovery
 │   ├── findings-storage/            # DynamoDB data access layer
 │   ├── api-gateway/                 # Authentication & API orchestration

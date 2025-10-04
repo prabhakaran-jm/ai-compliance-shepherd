@@ -1,7 +1,7 @@
 # AI Compliance Shepherd - Architecture Description
 
 ## Overview
-AI Compliance Shepherd is an autonomous AI agent built on AWS that transforms cloud compliance from reactive to proactive. The system uses Amazon Bedrock AgentCore with Claude 3 Sonnet for autonomous reasoning and decision-making, integrated with 31 Lambda functions to provide comprehensive compliance management.
+AI Compliance Shepherd is an autonomous AI agent built on AWS that transforms cloud compliance from reactive to proactive. The system uses Amazon Bedrock AgentCore with Claude 3 Sonnet for autonomous reasoning and decision-making, integrated with 19 microservices to provide comprehensive compliance management.
 
 ## Core Architecture Components
 
@@ -20,7 +20,7 @@ The AI agent has access to 6 action groups that enable autonomous operations:
 5. **TerraformActions**: Infrastructure-as-code compliance analysis
 6. **S3ManagementActions**: S3 bucket security and configuration management
 
-### 3. Core Services (31 Lambda Functions)
+### 3. Core Services (19 Microservices)
 - **scan-environment**: Multi-region AWS resource discovery
 - **findings-storage**: DynamoDB data access layer
 - **apply-fix**: Guardrailed remediation engine

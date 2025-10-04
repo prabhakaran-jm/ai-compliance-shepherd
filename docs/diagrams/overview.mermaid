@@ -1,0 +1,86 @@
+graph TB
+    %% User Layer
+    subgraph "User Interface"
+        WEB[Web Dashboard]
+        CHAT[AI Chat Interface]
+    end
+
+    %% AI Agent Core
+    subgraph "AI Agent Core - Amazon Bedrock"
+        AGENT[Bedrock AgentCore<br/>Claude 3 Sonnet<br/>Autonomous Reasoning]
+        KB[Knowledge Base<br/>SOC 2, HIPAA, GDPR<br/>RAG-powered]
+    end
+
+    %% Action Groups
+    subgraph "Action Groups (6 Lambda Functions)"
+        SCAN[Scan Environment]
+        FIND[Manage Findings]
+        FIX[Apply Fixes]
+        REPORT[Generate Reports]
+        TF[Analyze Terraform]
+        S3[Manage S3]
+    end
+
+    %% Core Services
+    subgraph "Core Services (31 Lambda Functions)"
+        SERVICES[Compliance Services<br/>Multi-tenant Architecture]
+    end
+
+    %% Data & Storage
+    subgraph "Data Layer"
+        DDB[(DynamoDB<br/>15+ Tables)]
+        S3_STORAGE[(S3 Buckets<br/>Reports & Artifacts)]
+    end
+
+    %% Orchestration
+    subgraph "Orchestration"
+        SF[Step Functions<br/>Workflow Engine]
+        EB[EventBridge<br/>Scheduled Scans]
+    end
+
+    %% External Integrations
+    subgraph "External Integrations"
+        GITHUB[GitHub<br/>PR Reviews]
+        SLACK[Slack<br/>Notifications]
+        AWS[AWS Resources<br/>Multi-region]
+    end
+
+    %% Connections
+    WEB --> AGENT
+    CHAT --> AGENT
+    AGENT --> KB
+    AGENT --> SCAN
+    AGENT --> FIND
+    AGENT --> FIX
+    AGENT --> REPORT
+    AGENT --> TF
+    AGENT --> S3
+
+    SCAN --> SERVICES
+    FIND --> SERVICES
+    FIX --> SERVICES
+    REPORT --> SERVICES
+    TF --> SERVICES
+    S3 --> SERVICES
+
+    SERVICES --> DDB
+    SERVICES --> S3_STORAGE
+    SERVICES --> SF
+    SF --> EB
+
+    GITHUB --> SERVICES
+    SLACK --> SERVICES
+    AWS --> SERVICES
+
+    %% Styling
+    classDef aiCore fill:#ff6b6b,stroke:#333,stroke-width:3px,color:#fff
+    classDef actionGroup fill:#4ecdc4,stroke:#333,stroke-width:2px,color:#fff
+    classDef dataLayer fill:#45b7d1,stroke:#333,stroke-width:2px,color:#fff
+    classDef orchestration fill:#96ceb4,stroke:#333,stroke-width:2px,color:#fff
+    classDef external fill:#feca57,stroke:#333,stroke-width:2px,color:#fff
+
+    class AGENT,KB aiCore
+    class SCAN,FIND,FIX,REPORT,TF,S3 actionGroup
+    class DDB,S3_STORAGE dataLayer
+    class SF,EB orchestration
+    class GITHUB,SLACK,AWS external

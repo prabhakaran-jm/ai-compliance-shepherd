@@ -1,0 +1,148 @@
+graph TB
+    %% User Interfaces
+    subgraph "User Interfaces"
+        UI[Web Dashboard]
+        API[REST API]
+        CHAT[Chat Interface]
+    end
+
+    %% AI Agent Core
+    subgraph "AI Agent Core - Amazon Bedrock"
+        AGENT[Bedrock AgentCore<br/>Claude 3 Sonnet]
+        KB[Knowledge Base<br/>SOC 2, HIPAA, GDPR]
+        RAG[RAG Engine<br/>Vector Search]
+    end
+
+    %% Action Groups
+    subgraph "Action Groups (Lambda Functions)"
+        SCAN[Scan Environment<br/>Multi-region Discovery]
+        FIND[Findings Storage<br/>Compliance Analysis]
+        FIX[Apply Fix<br/>Guarded Remediation]
+        REPORT[Report Generator<br/>Audit Documentation]
+        TF[Terraform Analysis<br/>IaC Compliance]
+        S3[S3 Management<br/>Bucket Security]
+    end
+
+    %% Core Services
+    subgraph "Core Services (31 Lambda Functions)"
+        SCAN_ENV[scan-environment]
+        FINDINGS[findings-storage]
+        APPLY_FIX[apply-fix]
+        REPORT_GEN[html-report-generator]
+        TF_ANALYZE[analyze-terraform-plan]
+        S3_MGR[s3-bucket-manager]
+        API_GW[api-gateway]
+        CHAT_INT[chat-interface]
+        AUDIT[audit-pack-generator]
+        TENANT[tenant-management]
+        SLACK[slack-notifications]
+        GITHUB[github-webhook-handler]
+        SCHEDULER[eventbridge-scheduler]
+        ORCHESTRATOR[step-functions-orchestrator]
+    end
+
+    %% Data Layer
+    subgraph "Data Layer"
+        DDB[(DynamoDB<br/>15+ Tables<br/>Multi-tenant)]
+        S3_STORAGE[(S3 Buckets<br/>Reports & Artifacts)]
+        KMS[KMS Keys<br/>Customer Encryption]
+    end
+
+    %% Orchestration
+    subgraph "Orchestration & Events"
+        SF[Step Functions<br/>Workflow Engine]
+        EB[EventBridge<br/>Event Scheduler]
+        CW[CloudWatch<br/>Monitoring & Logs]
+    end
+
+    %% External Integrations
+    subgraph "External Integrations"
+        GITHUB_EXT[GitHub<br/>PR Compliance Reviews]
+        SLACK_EXT[Slack<br/>Notifications]
+        AWS_RESOURCES[AWS Resources<br/>Multi-region Scanning]
+    end
+
+    %% Security & Compliance
+    subgraph "Security & Compliance"
+        IAM[IAM Roles<br/>Least Privilege]
+        SECRETS[Secrets Manager<br/>Credential Storage]
+        GUARDRAILS[Security Guardrails<br/>Runtime Controls]
+        POLICIES[Compliance Policies<br/>SOC 2, HIPAA, GDPR]
+    end
+
+    %% Infrastructure
+    subgraph "Infrastructure as Code"
+        CDK[AWS CDK<br/>TypeScript]
+        TF[Terraform<br/>Customer Onboarding]
+        IAM_ROLES[IAM Roles<br/>Cross-account]
+    end
+
+    %% Connections
+    UI --> API
+    CHAT --> API
+    API --> AGENT
+    API --> SCAN_ENV
+    API --> FINDINGS
+    API --> APPLY_FIX
+    API --> REPORT_GEN
+
+    AGENT --> KB
+    AGENT --> RAG
+    AGENT --> SCAN
+    AGENT --> FIND
+    AGENT --> FIX
+    AGENT --> REPORT
+    AGENT --> TF
+    AGENT --> S3
+
+    SCAN --> SCAN_ENV
+    FIND --> FINDINGS
+    FIX --> APPLY_FIX
+    REPORT --> REPORT_GEN
+    TF --> TF_ANALYZE
+    S3 --> S3_MGR
+
+    SCAN_ENV --> DDB
+    FINDINGS --> DDB
+    APPLY_FIX --> DDB
+    REPORT_GEN --> S3_STORAGE
+    TF_ANALYZE --> DDB
+    S3_MGR --> S3_STORAGE
+
+    SF --> SCAN_ENV
+    SF --> APPLY_FIX
+    SF --> REPORT_GEN
+    EB --> SF
+    EB --> SCHEDULER
+
+    GITHUB_EXT --> GITHUB
+    SLACK_EXT --> SLACK
+    AWS_RESOURCES --> SCAN_ENV
+
+    SCAN_ENV --> IAM
+    APPLY_FIX --> GUARDRAILS
+    AUDIT --> POLICIES
+
+    CDK --> AGENT
+    CDK --> DDB
+    CDK --> S3_STORAGE
+    CDK --> SF
+    CDK --> EB
+    TF --> IAM_ROLES
+
+    %% Styling
+    classDef aiCore fill:#ff9999,stroke:#333,stroke-width:3px
+    classDef actionGroup fill:#99ccff,stroke:#333,stroke-width:2px
+    classDef dataLayer fill:#99ff99,stroke:#333,stroke-width:2px
+    classDef orchestration fill:#ffcc99,stroke:#333,stroke-width:2px
+    classDef external fill:#cc99ff,stroke:#333,stroke-width:2px
+    classDef security fill:#ffff99,stroke:#333,stroke-width:2px
+    classDef infrastructure fill:#ffccff,stroke:#333,stroke-width:2px
+
+    class AGENT,KB,RAG aiCore
+    class SCAN,FIND,FIX,REPORT,TF,S3 actionGroup
+    class DDB,S3_STORAGE,KMS dataLayer
+    class SF,EB,CW orchestration
+    class GITHUB_EXT,SLACK_EXT,AWS_RESOURCES external
+    class IAM,SECRETS,GUARDRAILS,POLICIES security
+    class CDK,TF,IAM_ROLES infrastructure

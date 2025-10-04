@@ -24,7 +24,7 @@ This project perfectly exemplifies an **autonomous AI agent** that:
 ### **Core AWS Services**
 - **🤖 Amazon Bedrock AgentCore** - Autonomous agent capabilities with reasoning
 - **🧠 Amazon Bedrock** - LLM hosting (Claude, GPT, Nova) and Knowledge Bases
-- **⚡ AWS Lambda** - 31 serverless functions for microservices architecture
+- **⚡ AWS Lambda** - 19 microservices for serverless architecture
 - **🗄️ Amazon DynamoDB** - 15 tables for multi-tenant data storage
 - **🪣 Amazon S3** - Secure storage for reports, artifacts, and configurations
 - **🔗 AWS API Gateway** - RESTful APIs with authentication and rate limiting
@@ -64,8 +64,8 @@ npm run demo:data
 ```
 
 ### **Access the Platform**
-🌐 **Web Dashboard**: `https://dashboard.ai-compliance-shepherd.com`  
-💬 **Chat Interface**: Available in the web dashboard  
+🌐 **Live Demo**: Deployed on AWS Amplify with HTTPS  
+💬 **Chat Interface**: Interactive AI assistant in the demo  
 📡 **API Endpoints**: REST APIs with comprehensive documentation
 
 ## 🎖️ **Supported Compliance Frameworks**

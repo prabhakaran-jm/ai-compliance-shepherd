@@ -171,8 +171,8 @@ npm test
 ```
 
 ### **Access the Platform**
-🌐 **Web Dashboard**: `https://dashboard.ai-compliance-shepherd.com`  
-💬 **Chat Interface**: Available in the web dashboard  
+🌐 **Live Demo**: Deployed on AWS Amplify with HTTPS  
+💬 **Chat Interface**: Interactive AI assistant in the demo  
 📡 **API Endpoints**: REST APIs with comprehensive documentation
 
 ### **AI Agent Demo Commands**
@@ -187,8 +187,8 @@ Set up continuous monitoring for PCI-DSS requirements
 ## 📖 **Documentation**
 
 - 📚 **[Complete Documentation Suite](docs/README.md)**
-- 🏗️ **[Architecture Overview](docs/architecture-overview.md)**
-- 🚀 **[Deployment Guide](docs/deployment-guide.md)**
+- 🏗️ **[Architecture Overview](docs/architecture.md)**
+- 🚀 **[Deployment Guide](docs/submission.md)**
 - 👨‍💻 **[API Reference](docs/architecture/api-reference.md)**
 - 👤 **[User Manual](docs/user-manual.md)**
 - 🔧 **[Developer Guide](docs/administrator-guide.md)**

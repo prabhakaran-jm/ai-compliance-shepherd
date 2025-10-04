@@ -5,7 +5,7 @@
 **Project**: AI Compliance Shepherd  
 **Built for**: AWS AI Agent Global Hackathon 2025  
 **Repository**: https://github.com/prabhakaran-jm/ai-compliance-shepherd  
-**Deployed URL**: https://dashboard.ai-compliance-shepherd.com  
+**Deployed URL**: Deployed on AWS Amplify with HTTPS  
 
 ---
 

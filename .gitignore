@@ -106,6 +106,22 @@ jspm_packages/
 # AWS credentials (should never be committed)
 .aws/
 aws-credentials.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Sensitive configuration files
+config/secrets.json
+config/production.json
+secrets/
+credentials/
+
+# API keys and tokens
+api-keys.json
+tokens.json
+webhook-urls.json
 
 # Test artifacts
 test-results/

@@ -66,6 +66,11 @@ def handler(event, context):
     if path == '/health' and http_method == 'GET':
         return {
             "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+                "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+            },
             "body": json.dumps({
                 "message": "AI Compliance Agent is healthy",
                 "timestamp": datetime.utcnow().isoformat(),
@@ -79,6 +84,11 @@ def handler(event, context):
     if path == '/agent' and http_method == 'POST':
         return {
             "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+                "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+            },
             "body": json.dumps({
                 "message": "AI Compliance Agent is ready",
                 "timestamp": datetime.utcnow().isoformat(),
@@ -182,6 +192,11 @@ def handler(event, context):
         
         return {
             "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+                "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+            },
             "body": json.dumps({
                 "message": "AI Compliance Scan Complete",
                 "scanId": f"scan-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",
@@ -199,6 +214,11 @@ def handler(event, context):
     # Default response for unknown endpoints
     return {
         "statusCode": 404,
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+        },
         "body": json.dumps({
             "message": "Endpoint not found",
             "availableEndpoints": ["/health", "/scan", "/agent"],

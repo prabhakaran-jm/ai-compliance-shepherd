@@ -13,7 +13,7 @@ const url = require('url');
 
 const PORT = 3001; // Different port to avoid conflicts
 const DEMO_FILE = path.join(__dirname, 'index.html');
-const API_BASE = 'https://2d11fsgdw2.execute-api.us-east-1.amazonaws.com/prod';
+const API_BASE = process.env.API_BASE_URL || 'https://tpvaw1nyjf.execute-api.us-east-1.amazonaws.com/prod';
 
 const server = http.createServer((req, res) => {
     // Handle CORS headers
@@ -126,7 +126,7 @@ server.listen(PORT, () => {
     console.log(`   ✅ API Gateway: ${API_BASE}/`);
     console.log(`   ✅ Lambda Functions: Deployed and running`);
     console.log(`   ✅ DynamoDB: ai-compliance-demo-findings`);
-    console.log(`   ✅ S3 Bucket: 556274720247-ai-compliance-demo-1759570442682`);
+    console.log(`   ✅ S3 Bucket: ${process.env.S3_BUCKET_NAME || 'ai-compliance-demo-bucket'}`);
     console.log(`   ✅ CloudWatch: AI-Compliance-Demo-Dashboard`);
     console.log(`\n🔧 CORS Proxy: Enabled for API calls`);
     console.log(`\n🎬 Perfect for recording your hackathon demo video!`);

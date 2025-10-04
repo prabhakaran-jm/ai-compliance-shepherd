@@ -97,7 +97,6 @@ npm run demo:scenarios
 
 - 📚 **[Submission Summary](docs/submission.md)** - Complete submission overview
 - 🏗️ **[Architecture](docs/architecture.md)** - System architecture description
-- 🎬 **[Demo Video Script](docs/demo-video-script.md)** - 3-minute demo video guide
 - 📊 **[Architecture Diagrams](docs/diagrams/)** - Visual system architecture
 
 ## 🔒 **Security & Compliance**

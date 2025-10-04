@@ -26,17 +26,20 @@
     "demo:optimize": "node scripts/demo-optimization.js",
     "demo:scenario-setup": "node scripts/demo-scenarios.js",
     "demo:prepare": "chmod +x scripts/*.sh && node scripts/demo-optimization.js && node scripts/demo-scenarios.js",
-    "demo:deploy-strategy": "./scripts/test-and-deploy-strategy.sh",
-    "demo:validate": "./scripts/test-and-deploy-strategy.sh validate",
-    "demo:deploy-minimal": "./scripts/test-and-deploy-strategy.sh deploy",
-    "demo:full-setup": "npm run demo:prepare && ./scripts/test-and-deploy-strategy.sh all"
+    "demo:deploy-strategy": "node scripts/test-and-deploy-strategy.js",
+    "demo:validate": "node scripts/test-and-deploy-strategy.js validate",
+    "demo:deploy-minimal": "node scripts/test-and-deploy-strategy.js deploy",
+    "demo:full-setup": "npm run demo:prepare && node scripts/test-and-deploy-strategy.js all",
+    "demo:quick": "node scripts/quick-demo.js",
+    "demo:server": "node demo/server.js",
+    "demo:start": "node demo/server.js",
+    "demo:real": "node demo-real/server.js"
   },
   "workspaces": [
     "shared",
     "services/*",
     "security/*",
     "monitoring/*",
-    "infrastructure/*",
     "testing",
     "ui/*"
   ],

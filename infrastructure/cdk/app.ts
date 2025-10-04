@@ -45,80 +45,62 @@ const config = {
 const envConfig = config[environment as keyof typeof config] || config.dev;
 
 // Core stack dependencies
-const { stackName: coreStackName } = new AiCompliancePlatformStack(app, `${envConfig.prefix}-core`, {
+const coreStack = new AiCompliancePlatformStack(app, `${envConfig.prefix}-core`, {
   env: { account: envConfig.account, region: envConfig.region },
   config: envConfig,
   description: 'AI Compliance Shepherd Core Platform Stack'
 });
 
 // Database infrastructure
-const { stackName: databaseStackName } = new DatabaseStack(app, `${envConfig.prefix}-database`, {
+const databaseStack = new DatabaseStack(app, `${envConfig.prefix}-database`, {
   env: { account: envConfig.account, region: envConfig.region },
   config: envConfig,
   description: 'AI Compliance Shepherd Database Stack'
 });
 
 // Security infrastructure
-const { stackName: securityStackName } = new SecurityStack(app, `${envConfig.prefix}-security`, {
+const securityStack = new SecurityStack(app, `${envConfig.prefix}-security`, {
   env: { account: envConfig.account, region: envConfig.region },
   config: envConfig,
   description: 'AI Compliance Shepherd Security Stack'
 });
 
 // Storage infrastructure
-const { stackName: storageStackName } = new StorageStack(app, `${envConfig.prefix}-storage`, {
+const storageStack = new StorageStack(app, `${envConfig.prefix}-storage`, {
   env: { account: envConfig.account, region: envConfig.region },
   config: envConfig,
-  securityStackName,
   description: 'AI Compliance Shepherd Storage Stack'
 });
 
 // Lambda functions
-const { stackName: lambdaStackName } = new LambdaStack(app, `${envConfig.prefix}-lambda`, {
+const lambdaStack = new LambdaStack(app, `${envConfig.prefix}-lambda`, {
   env: { account: envConfig.account, region: envConfig.region },
   config: envConfig,
-  databaseStackName,
-  securityStackName,
-  storageStackName,
   description: 'AI Compliance Shepherd Lambda Stack'
 });
 
 // API Gateway
-const { stackName: apiStackName } = new ApiStack(app, `${envConfig.prefix}-api`, {
+const apiStack = new ApiStack(app, `${envConfig.prefix}-api`, {
   env: { account: envConfig.account, region: envConfig.region },
   config: envConfig,
-  lambdaStackName,
-  securityStackName,
   description: 'AI Compliance Shepherd API Stack'
 });
 
 // Monitoring and observability
-const { stackName: monitoringStackName } = new MonitoringStack(app, `${envConfig.prefix}-monitoring`, {
+const monitoringStack = new MonitoringStack(app, `${envConfig.prefix}-monitoring`, {
   env: { account: envConfig.account, region: envConfig.region },
   config: envConfig,
-  lambdaStackName,
-  apiStackName,
   description: 'AI Compliance Shepherd Monitoring Stack'
 });
 
 // Integrations (GitHub, Slack, etc.)
-const { stackName: integrationStackName } = new IntegrationStack(app, `${envConfig.prefix}-integration`, {
+const integrationStack = new IntegrationStack(app, `${envConfig.prefix}-integration`, {
   env: { account: envConfig.account, region: envConfig.region },
   config: envConfig,
-  lambdaStackName,
-  securityStackName,
   description: 'AI Compliance Shepherd Integration Stack'
 });
 
 // Stack dependency ordering
-const coreStack = app.node.findChild(`${envConfig.prefix}-core`) as cdk.Stack;
-const databaseStack = app.node.findChild(`${envConfig.prefix}-database`) as cdk.Stack;
-const securityStack = app.node.findChild(`${envConfig.prefix}-security`) as cdk.Stack;
-const storageStack = app.node.findChild(`${envConfig.prefix}-storage`) as cdk.Stack;
-const lambdaStack = app.node.findChild(`${envConfig.prefix}-lambda`) as cdk.Stack;
-const apiStack = app.node.findChild(`${envConfig.prefix}-api`) as cdk.Stack;
-const monitoringStack = app.node.findChild(`${envConfig.prefix}-monitoring`) as cdk.Stack;
-const integrationStack = app.node.findChild(`${envConfig.prefix}-integration`) as cdk.Stack;
 
 // Define stack dependencies
 databaseStack.addDependency(coreStack);
@@ -141,20 +123,20 @@ cdk.Tags.of(app).add('Stage', envConfig.stage);
 cdk.Tags.of(app).add('ManagedBy', 'CDK');
 
 // Output deployment information
-new cdk.CfnOutput(localScope: coreStack, 'DeploymentInfo', {
+new cdk.CfnOutput(coreStack, 'DeploymentInfo', {
   value: JSON.stringify({
     environment: envConfig.environment,
     region: envConfig.region,
     deploymentTime: new Date().toISOString(),
     stackDependencies: {
-      core: coreStackName,
-      database: databaseStackName,
-      security: securityStackName,
-      storage: storageStackName,
-      lambda: lambdaStackName,
-      api: apiStackName,
-      monitoring: monitoringStackName,
-      integration: integrationStackName
+      core: coreStack.stackName,
+      database: databaseStack.stackName,
+      security: securityStack.stackName,
+      storage: storageStack.stackName,
+      lambda: lambdaStack.stackName,
+      api: apiStack.stackName,
+      monitoring: monitoringStack.stackName,
+      integration: integrationStack.stackName
     }
   }),
   description: 'Deployment configuration and stack information'

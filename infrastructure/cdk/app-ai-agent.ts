@@ -491,9 +491,9 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
                                                                     "timestamp": datetime.utcnow().isoformat(),
                                                                     "scanSource": "real-aws-api"
                                                                 })
-                                    except Exception as e:
-                                        print(f"Error checking security group {sg_id}: {str(e)}")
-                                        continue
+                                        except Exception as e:
+                                            print(f"Error checking security group {sg_id}: {str(e)}")
+                                            continue
                                     
             except Exception as e:
                 print(f"Error scanning region {region}: {str(e)}")
@@ -644,7 +644,7 @@ def handler(event, context):
                 }
                 
                 response = lambda_client.invoke(
-                    FunctionName=os.environ.get('REAL_SCANNER_FN'),
+                    FunctionName='AiComplianceAgentStack-RealResourceScannerLambdaC9-bIgCTWFcvRZy',
                     InvocationType='RequestResponse',
                     Payload=json.dumps(real_scan_event)
                 )

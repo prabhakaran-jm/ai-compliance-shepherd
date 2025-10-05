@@ -61,6 +61,92 @@ import os
 from datetime import datetime
 from typing import List, Dict, Any
 
+def publish_custom_metrics(findings: List[Dict[str, Any]], services: List[str]):
+    """Publish custom metrics to CloudWatch for dashboard monitoring"""
+    try:
+        cloudwatch = boto3.client('cloudwatch')
+        
+        # Count findings by severity
+        severity_counts = {'Critical': 0, 'HIGH': 0, 'MEDIUM': 0, 'LOW': 0}
+        auto_remediable_count = 0
+        total_estimated_savings = 0
+        
+        for finding in findings:
+            severity = finding.get('severity', 'LOW')
+            if severity in severity_counts:
+                severity_counts[severity] += 1
+            
+            if finding.get('autoRemediable', False):
+                auto_remediable_count += 1
+            
+            total_estimated_savings += finding.get('estimatedCost', 0)
+        
+        # Count resources scanned by service
+        s3_buckets_scanned = len([f for f in findings if f.get('resource', '').startswith('s3://')])
+        iam_roles_analyzed = len([f for f in findings if 'iam' in f.get('resource', '').lower()])
+        ec2_instances_checked = len([f for f in findings if f.get('resource', '').startswith('i-')])
+        
+        # Publish metrics
+        metrics = []
+        
+        # Service-specific metrics
+        if 's3' in services:
+            metrics.append({
+                'MetricName': 'S3BucketsScanned',
+                'Value': s3_buckets_scanned,
+                'Unit': 'Count'
+            })
+        
+        if 'iam' in services:
+            metrics.append({
+                'MetricName': 'IAMRolesAnalyzed',
+                'Value': iam_roles_analyzed,
+                'Unit': 'Count'
+            })
+        
+        if 'ec2' in services:
+            metrics.append({
+                'MetricName': 'EC2InstancesChecked',
+                'Value': ec2_instances_checked,
+                'Unit': 'Count'
+            })
+        
+        # Severity metrics
+        for severity, count in severity_counts.items():
+            if count > 0:
+                metrics.append({
+                    'MetricName': f'{severity}Findings',
+                    'Value': count,
+                    'Unit': 'Count'
+                })
+        
+        # Auto-remediation metrics
+        if auto_remediable_count > 0:
+            metrics.append({
+                'MetricName': 'AutoRemediableFindings',
+                'Value': auto_remediable_count,
+                'Unit': 'Count'
+            })
+        
+        # Cost savings metric
+        if total_estimated_savings > 0:
+            metrics.append({
+                'MetricName': 'EstimatedAnnualSavings',
+                'Value': total_estimated_savings,
+                'Unit': 'None'
+            })
+        
+        # Send metrics to CloudWatch
+        if metrics:
+            cloudwatch.put_metric_data(
+                Namespace='AIComplianceShepherd',
+                MetricData=metrics
+            )
+            print(f"Published {len(metrics)} custom metrics to CloudWatch")
+        
+    except Exception as e:
+        print(f"Error publishing custom metrics: {str(e)}")
+
 def handler(event, context):
     """
     Real AWS Resource Scanner Lambda Function
@@ -91,6 +177,9 @@ def handler(event, context):
         if 'ec2' in services:
             ec2_findings = scan_ec2_resources(regions)
             findings.extend(ec2_findings)
+        
+        # Publish custom metrics to CloudWatch
+        publish_custom_metrics(findings, services)
         
         return {
             "statusCode": 200,
@@ -359,6 +448,15 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
         'ec2:DescribeSecurityGroups',
         'bedrock:InvokeModel',
         'bedrock:InvokeModelWithResponseStream'
+      ],
+      resources: ['*']
+    }));
+
+    // Grant CloudWatch permissions for custom metrics
+    realResourceScannerLambda.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      effect: cdk.aws_iam.Effect.ALLOW,
+      actions: [
+        'cloudwatch:PutMetricData'
       ],
       resources: ['*']
     }));
@@ -736,14 +834,285 @@ def generate_mock_findings(services):
       }
     });
 
-    // CloudWatch Dashboard for AI Agent
+    // Enhanced CloudWatch Dashboard for AI Agent
     const dashboard = new cdk.aws_cloudwatch.Dashboard(this, 'AiAgentDashboard', {
       dashboardName: 'AI-Compliance-Agent-Dashboard'
     });
 
+    // Dashboard Header
     dashboard.addWidgets(
       new cdk.aws_cloudwatch.TextWidget({
-        markdown: '# AI Compliance Agent Dashboard\n\nReal-time monitoring of AI-powered compliance scanning and remediation.\n\n## Enhanced Features\n- Real AWS resource scanning\n- Hybrid mode (real + mock fallback)\n- Cost-effective scanning'
+        markdown: '# AI Compliance Agent Dashboard\n\nReal-time monitoring of AI-powered compliance scanning and remediation.\n\n## Real Scanning Capabilities\n- **S3 Bucket Analysis**: Encryption, public access, lifecycle policies\n- **IAM Role Analysis**: Permission auditing, least privilege violations\n- **EC2 Instance Analysis**: Security groups, compliance configurations\n- **AI-Powered Insights**: Claude 3.5 Sonnet analysis and recommendations\n- **Auto-Remediation**: Automated fix suggestions and cost optimization',
+        width: 24,
+        height: 6
+      })
+    );
+
+    // Lambda Function Metrics
+    dashboard.addWidgets(
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'Compliance Scanner Lambda Performance',
+        left: [
+          complianceScannerLambda.metricInvocations({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          complianceScannerLambda.metricErrors({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        right: [
+          complianceScannerLambda.metricDuration({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Average'
+          })
+        ],
+        width: 12,
+        height: 6
+      }),
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'Real Resource Scanner Lambda Performance',
+        left: [
+          realResourceScannerLambda.metricInvocations({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          realResourceScannerLambda.metricErrors({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        right: [
+          realResourceScannerLambda.metricDuration({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Average'
+          })
+        ],
+        width: 12,
+        height: 6
+      })
+    );
+
+    // API Gateway Metrics
+    dashboard.addWidgets(
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'API Gateway Performance',
+        left: [
+          api.metricCount({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          api.metricLatency({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Average'
+          })
+        ],
+        right: [
+          api.metricClientError({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          api.metricServerError({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        width: 12,
+        height: 6
+      }),
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'API Gateway Throttling',
+        left: [
+          api.metricCount({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        width: 12,
+        height: 6
+      })
+    );
+
+    // DynamoDB Metrics
+    dashboard.addWidgets(
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'Compliance Findings Storage',
+        left: [
+          findingsTable.metricConsumedReadCapacityUnits({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          findingsTable.metricConsumedWriteCapacityUnits({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        right: [
+          findingsTable.metricThrottledRequests({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        width: 12,
+        height: 6
+      }),
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'DynamoDB Item Count',
+        left: [
+          findingsTable.metricConsumedReadCapacityUnits({
+            period: cdk.Duration.minutes(5),
+            statistic: 'Average'
+          })
+        ],
+        width: 12,
+        height: 6
+      })
+    );
+
+    // Bedrock Usage Metrics (if available)
+    dashboard.addWidgets(
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'AI Model Usage (Bedrock)',
+        left: [
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AWS/Bedrock',
+            metricName: 'ModelInvocationCount',
+            dimensionsMap: {
+              ModelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0'
+            },
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        right: [
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AWS/Bedrock',
+            metricName: 'ModelInvocationLatency',
+            dimensionsMap: {
+              ModelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0'
+            },
+            period: cdk.Duration.minutes(5),
+            statistic: 'Average'
+          })
+        ],
+        width: 12,
+        height: 6
+      }),
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'AI Model Errors (Bedrock)',
+        left: [
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AWS/Bedrock',
+            metricName: 'ModelInvocationErrorCount',
+            dimensionsMap: {
+              ModelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0'
+            },
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        width: 12,
+        height: 6
+      })
+    );
+
+    // Custom Metrics for Real Scanning
+    dashboard.addWidgets(
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'Real Scanning Metrics',
+        left: [
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'S3BucketsScanned',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'IAMRolesAnalyzed',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'EC2InstancesChecked',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        width: 12,
+        height: 6
+      }),
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'Compliance Findings by Severity',
+        left: [
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'CriticalFindings',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'HighFindings',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'MediumFindings',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          }),
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'LowFindings',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        width: 12,
+        height: 6
+      })
+    );
+
+    // Cost and Performance Summary
+    dashboard.addWidgets(
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'Estimated Cost Savings',
+        left: [
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'EstimatedAnnualSavings',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        width: 12,
+        height: 6
+      }),
+      new cdk.aws_cloudwatch.GraphWidget({
+        title: 'Auto-Remediable Findings',
+        left: [
+          new cdk.aws_cloudwatch.Metric({
+            namespace: 'AIComplianceShepherd',
+            metricName: 'AutoRemediableFindings',
+            period: cdk.Duration.minutes(5),
+            statistic: 'Sum'
+          })
+        ],
+        width: 12,
+        height: 6
+      })
+    );
+
+    // Footer with links and information
+    dashboard.addWidgets(
+      new cdk.aws_cloudwatch.TextWidget({
+        markdown: '## Dashboard Information\n\n**Real Scanning Status**: ✅ Active\n**AI Model**: Claude 3.5 Sonnet\n**Scanning Services**: S3, IAM, EC2\n**Compliance Frameworks**: SOC2, HIPAA, PCI-DSS, ISO27001\n\n**Quick Links**:\n- [API Gateway Console](https://console.aws.amazon.com/apigateway/)\n- [Lambda Console](https://console.aws.amazon.com/lambda/)\n- [DynamoDB Console](https://console.aws.amazon.com/dynamodb/)\n- [Bedrock Console](https://console.aws.amazon.com/bedrock/)',
+        width: 24,
+        height: 4
       })
     );
 

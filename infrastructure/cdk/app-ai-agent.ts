@@ -1432,60 +1432,21 @@ def generate_ai_insights(findings, services):
       endpointConfiguration: {
         types: [cdk.aws_apigateway.EndpointType.REGIONAL]
       },
+      defaultCorsPreflightOptions: {
+        allowOrigins: ['https://demo.cloudaimldevops.com'],
+        allowMethods: ['GET', 'POST', 'OPTIONS'],
+        allowHeaders: [
+          'Content-Type',
+          'X-Amz-Date',
+          'Authorization',
+          'X-Api-Key',
+          'X-Amz-Security-Token'
+        ],
+        allowCredentials: true,
+        statusCode: 200
+      },
       deploy: false
     });
-
-    // CORS settings
-    const allowOrigin = 'https://demo.cloudaimldevops.com';
-    const allowHeaders = '*';  // Allow all headers for preflight
-    const allowMethods = 'GET,POST,OPTIONS';
-
-    // Helper to add Lambda-based OPTIONS on a resource
-    function addMockOptions(resource: cdk.aws_apigateway.IResource) {
-      return resource.addMethod(
-        'OPTIONS',
-        corsHandlerIntegration,
-        {
-          authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-          methodResponses: [{
-            statusCode: '200',
-            responseParameters: {
-              'method.response.header.Access-Control-Allow-Origin': true,
-              'method.response.header.Access-Control-Allow-Headers': true,
-              'method.response.header.Access-Control-Allow-Methods': true,
-              'method.response.header.Access-Control-Max-Age': true,
-            },
-          }],
-        },
-      );
-    }
-
-    // Create a simple CORS handler Lambda
-    const corsHandlerLambda = new cdk.aws_lambda.Function(this, 'CorsHandlerLambda', {
-      runtime: cdk.aws_lambda.Runtime.PYTHON_3_9,
-      handler: 'index.handler',
-      code: cdk.aws_lambda.Code.fromInline(`
-import json
-
-def handler(event, context):
-    # Always return CORS headers
-    cors_headers = {
-        'Access-Control-Allow-Origin': 'https://demo.cloudaimldevops.com',
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-        'Access-Control-Max-Age': '86400'
-    }
-    
-    return {
-        'statusCode': 200,
-        'headers': cors_headers,
-        'body': json.dumps({'message': 'CORS preflight successful'})
-    }
-`),
-      description: 'Simple CORS handler for OPTIONS requests'
-    });
-
-    const corsHandlerIntegration = new cdk.aws_apigateway.LambdaIntegration(corsHandlerLambda);
 
     // Lambda integration
     const lambdaIntegration = new cdk.aws_apigateway.LambdaIntegration(complianceScannerLambda);
@@ -1509,20 +1470,14 @@ def handler(event, context):
       authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
     });
 
-    // Add MOCK OPTIONS methods (no Lambda involved)
-    const rootOptions = addMockOptions(api.root);
-    const scanOptions = addMockOptions(scanRes);
-    const healthOptions = addMockOptions(healthRes);
-    const agentOptions = addMockOptions(agentRes);
-    const remediateOptions = addMockOptions(remediateRes);
+
 
     // Explicit deployment and stage with dependencies on main methods only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v12-lambda-cors'
+      description: 'v13-gemini-cors-fix'
     });
-    // Depend on main methods AND OPTIONS methods to ensure they're deployed
-    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost, rootOptions, scanOptions, healthOptions, agentOptions, remediateOptions);
+    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);
 
     // API access logs for monitoring
     const apiLogGroup = new cdk.aws_logs.LogGroup(this, 'ApiAccessLogs', {
@@ -1557,9 +1512,9 @@ def handler(event, context):
       restApi: api,
       type: cdk.aws_apigateway.ResponseType.DEFAULT_4XX,
       responseHeaders: {
-        'Access-Control-Allow-Origin': `'${allowOrigin}'`,
-        'Access-Control-Allow-Headers': `'${allowHeaders}'`,
-        'Access-Control-Allow-Methods': `'${allowMethods}'`
+        'Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'GET,POST,OPTIONS'"
       }
     });
 
@@ -1567,9 +1522,9 @@ def handler(event, context):
       restApi: api,
       type: cdk.aws_apigateway.ResponseType.DEFAULT_5XX,
       responseHeaders: {
-        'Access-Control-Allow-Origin': `'${allowOrigin}'`,
-        'Access-Control-Allow-Headers': `'${allowHeaders}'`,
-        'Access-Control-Allow-Methods': `'${allowMethods}'`
+        'Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'GET,POST,OPTIONS'"
       }
     });
 
@@ -1577,9 +1532,9 @@ def handler(event, context):
       restApi: api,
       type: cdk.aws_apigateway.ResponseType.UNAUTHORIZED,
       responseHeaders: {
-        'Access-Control-Allow-Origin': `'${allowOrigin}'`,
-        'Access-Control-Allow-Headers': `'${allowHeaders}'`,
-        'Access-Control-Allow-Methods': `'${allowMethods}'`
+        'Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
+        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+        'Access-Control-Allow-Methods': "'GET,POST,OPTIONS'"
       }
     });
 

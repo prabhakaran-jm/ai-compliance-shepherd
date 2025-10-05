@@ -1440,22 +1440,11 @@ def generate_ai_insights(findings, services):
     const allowHeaders = '*';  // Allow all headers for preflight
     const allowMethods = 'GET,POST,OPTIONS';
 
-    // Helper to add MOCK OPTIONS on a resource
+    // Helper to add Lambda-based OPTIONS on a resource
     function addMockOptions(resource: cdk.aws_apigateway.IResource) {
-      resource.addMethod(
+      return resource.addMethod(
         'OPTIONS',
-        new cdk.aws_apigateway.MockIntegration({
-          requestTemplates: { 'application/json': '{"statusCode": 200}' },
-          integrationResponses: [{
-            statusCode: '200',
-            responseParameters: {
-              'method.response.header.Access-Control-Allow-Origin': `'${allowOrigin}'`,
-              'method.response.header.Access-Control-Allow-Headers': `'${allowHeaders}'`,
-              'method.response.header.Access-Control-Allow-Methods': `'${allowMethods}'`,
-              'method.response.header.Access-Control-Max-Age': "'86400'",
-            },
-          }],
-        }),
+        corsHandlerIntegration,
         {
           authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
           methodResponses: [{
@@ -1470,6 +1459,33 @@ def generate_ai_insights(findings, services):
         },
       );
     }
+
+    // Create a simple CORS handler Lambda
+    const corsHandlerLambda = new cdk.aws_lambda.Function(this, 'CorsHandlerLambda', {
+      runtime: cdk.aws_lambda.Runtime.PYTHON_3_9,
+      handler: 'index.handler',
+      code: cdk.aws_lambda.Code.fromInline(`
+import json
+
+def handler(event, context):
+    # Always return CORS headers
+    cors_headers = {
+        'Access-Control-Allow-Origin': 'https://demo.cloudaimldevops.com',
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+        'Access-Control-Max-Age': '86400'
+    }
+    
+    return {
+        'statusCode': 200,
+        'headers': cors_headers,
+        'body': json.dumps({'message': 'CORS preflight successful'})
+    }
+`),
+      description: 'Simple CORS handler for OPTIONS requests'
+    });
+
+    const corsHandlerIntegration = new cdk.aws_apigateway.LambdaIntegration(corsHandlerLambda);
 
     // Lambda integration
     const lambdaIntegration = new cdk.aws_apigateway.LambdaIntegration(complianceScannerLambda);
@@ -1494,19 +1510,19 @@ def generate_ai_insights(findings, services):
     });
 
     // Add MOCK OPTIONS methods (no Lambda involved)
-    addMockOptions(api.root);
-    addMockOptions(scanRes);
-    addMockOptions(healthRes);
-    addMockOptions(agentRes);
-    addMockOptions(remediateRes);
+    const rootOptions = addMockOptions(api.root);
+    const scanOptions = addMockOptions(scanRes);
+    const healthOptions = addMockOptions(healthRes);
+    const agentOptions = addMockOptions(agentRes);
+    const remediateOptions = addMockOptions(remediateRes);
 
     // Explicit deployment and stage with dependencies on main methods only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v10-cors-all-headers'
+      description: 'v12-lambda-cors'
     });
-    // Depend on main methods only - MockIntegration OPTIONS don't need dependencies
-    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);
+    // Depend on main methods AND OPTIONS methods to ensure they're deployed
+    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost, rootOptions, scanOptions, healthOptions, agentOptions, remediateOptions);
 
     // API access logs for monitoring
     const apiLogGroup = new cdk.aws_logs.LogGroup(this, 'ApiAccessLogs', {

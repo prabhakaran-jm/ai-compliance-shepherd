@@ -36,22 +36,51 @@ The AI agent has access to 6 action groups that enable autonomous operations:
 - **chat-interface**: Conversational AI chat interface
 - **s3-bucket-manager**: S3 lifecycle & security management
 
-### 4. Data Layer
+### 4. Real AWS Resource Scanning
+The system performs actual AWS resource discovery and compliance analysis:
+
+- **S3 Bucket Analysis**: 
+  - Server-side encryption verification
+  - Public access block configuration
+  - Lifecycle policy compliance
+  - Versioning and access logging
+
+- **IAM Role Analysis**:
+  - Permission auditing and least privilege violations
+  - Policy attachment analysis
+  - Cross-service access patterns
+  - Unused permission identification
+
+- **EC2 Instance Analysis**:
+  - Security group configuration review
+  - Instance compliance with security standards
+  - Network access pattern analysis
+  - Resource utilization optimization
+
+### 5. Enhanced Monitoring and Observability
+- **CloudWatch Dashboard**: Comprehensive real-time monitoring
+- **Custom Metrics**: Service-specific scanning metrics
+- **Performance Tracking**: Lambda execution times and API Gateway latency
+- **AI Model Usage**: Bedrock invocation counts and error rates
+- **Cost Optimization**: Estimated savings from compliance improvements
+- **Severity Classification**: Critical, High, Medium, Low finding categorization
+
+### 6. Data Layer
 - **DynamoDB**: 15+ tables for multi-tenant data storage (findings, actions, audit logs)
 - **S3**: Secure storage for reports, artifacts, and evidence packs
 - **KMS**: Customer-specific encryption key management
 
-### 5. Orchestration & Events
+### 7. Orchestration & Events
 - **Step Functions**: Complex workflow orchestration for compliance processes
 - **EventBridge**: Scheduled scans and event-driven triggers
 - **CloudWatch**: Comprehensive monitoring, logging, and alerting
 
-### 6. External Integrations
+### 8. External Integrations
 - **GitHub**: Automatic PR compliance reviews and shift-left security
 - **Slack**: Real-time notifications and team collaboration
 - **AWS Resources**: Multi-region scanning across customer environments
 
-### 7. Security & Compliance
+### 9. Security & Compliance
 - **IAM Roles**: Least privilege access with cross-account assume roles
 - **Secrets Manager**: Secure credential handling
 - **Security Guardrails**: Runtime security controls and validation

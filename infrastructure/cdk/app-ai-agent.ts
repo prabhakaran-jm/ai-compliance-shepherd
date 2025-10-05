@@ -119,8 +119,24 @@ def handler(event, context):
         }
 
 def scan_s3_resources(regions: List[str]) -> List[Dict[str, Any]]:
-    """Real S3 bucket scanning"""
+    """Real S3 bucket scanning with CDK assets exclusion"""
     findings = []
+    
+    # Resources to exclude from scanning (CDK managed, not security-critical)
+    excluded_patterns = [
+        'cdk-',  # CDK assets buckets
+        'cdkassets',  # CDK assets
+        'aws-cdk-',  # AWS CDK buckets
+        'cloudformation-',  # CloudFormation buckets
+        'amplify-',  # Amplify buckets
+        'lambda-',  # Lambda deployment buckets
+        'serverless-',  # Serverless framework buckets
+    ]
+    
+    def should_exclude_resource(resource_name: str) -> bool:
+        """Check if resource should be excluded from compliance scanning"""
+        resource_lower = resource_name.lower()
+        return any(pattern in resource_lower for pattern in excluded_patterns)
     
     try:
         s3_client = boto3.client('s3')
@@ -130,6 +146,11 @@ def scan_s3_resources(regions: List[str]) -> List[Dict[str, Any]]:
         
         for bucket in response['Buckets']:
             bucket_name = bucket['Name']
+            
+            # Skip CDK assets and other non-security-critical resources
+            if should_exclude_resource(bucket_name):
+                print(f"Skipping CDK/managed bucket: {bucket_name}")
+                continue
             
             try:
                 # Check encryption

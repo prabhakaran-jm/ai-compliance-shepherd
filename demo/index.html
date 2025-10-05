@@ -1226,6 +1226,8 @@
 
         async function performRemediation(finding) {
             try {
+                console.log('Attempting remediation for finding:', finding);
+                
                 // Call remediation API endpoint
                 const response = await fetch(`${API_BASE}/remediate`, {
                     method: 'POST',
@@ -1241,13 +1243,28 @@
                     })
                 });
 
+                console.log('Remediation API response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Remediation API error:', errorText);
+                    return {
+                        success: false,
+                        error: `API returned ${response.status}: ${errorText}`,
+                        details: errorText
+                    };
+                }
+
                 const result = await response.json();
+                console.log('Remediation API result:', result);
                 return result;
 
             } catch (error) {
+                console.error('Remediation error:', error);
                 return {
                     success: false,
-                    error: error.message
+                    error: error.message,
+                    details: error.toString()
                 };
             }
         }

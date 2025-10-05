@@ -518,20 +518,6 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
       resources: ['*']
     }));
 
-    // Grant Step Functions permissions for remediation workflow
-    complianceScannerLambda.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
-      effect: cdk.aws_iam.Effect.ALLOW,
-      actions: [
-        'states:StartExecution',
-        'states:DescribeExecution',
-        'states:StopExecution'
-      ],
-      resources: [
-        `arn:${cdk.Aws.PARTITION}:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:RemediationWorkflow`,
-        `arn:${cdk.Aws.PARTITION}:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:RemediationWorkflow:*`
-      ]
-    }));
-
     // Grant Lambda access to DynamoDB
     findingsTable.grantReadWriteData(realResourceScannerLambda);
 
@@ -1201,6 +1187,20 @@ def generate_ai_insights(findings, services):
       resources: [realResourceScannerLambda.functionArn]
     }));
 
+    // Grant Step Functions permissions for remediation workflow
+    complianceScannerLambda.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      effect: cdk.aws_iam.Effect.ALLOW,
+      actions: [
+        'states:StartExecution',
+        'states:DescribeExecution',
+        'states:StopExecution'
+      ],
+      resources: [
+        `arn:${cdk.Aws.PARTITION}:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:stateMachine:RemediationWorkflow`,
+        `arn:${cdk.Aws.PARTITION}:states:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:execution:RemediationWorkflow:*`
+      ]
+    }));
+
     // Step Functions State Machine for Remediation Workflow
     const remediationStateMachine = new cdk.aws_stepfunctions.StateMachine(this, 'RemediationWorkflow', {
       stateMachineName: 'RemediationWorkflow',
@@ -1404,14 +1404,17 @@ def generate_ai_insights(findings, services):
     const scanRes   = api.root.addResource('scan');
     const healthRes = api.root.addResource('health');
     const agentRes  = api.root.addResource('agent');
+    const remediateRes = api.root.addResource('remediate');
 
     scanRes.addCorsPreflight(cors);
     healthRes.addCorsPreflight(cors);
     agentRes.addCorsPreflight(cors);
+    remediateRes.addCorsPreflight(cors);
 
     const scanPost   = scanRes.addMethod('POST', lambdaIntegration);
     const healthGet  = healthRes.addMethod('GET',  lambdaIntegration);
     const agentPost  = agentRes.addMethod('POST', lambdaIntegration);
+    const remediatePost = remediateRes.addMethod('POST', lambdaIntegration);
 
     // Explicit deployment and stage with dependencies on methods with integrations only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
@@ -1419,7 +1422,7 @@ def generate_ai_insights(findings, services):
       description: 'v1' // bump to v2 when routes change
     });
     // Only depend on methods that have integrations (not OPTIONS methods)
-    deployment.node.addDependency(scanPost, healthGet, agentPost);
+    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);
 
     // API access logs for monitoring
     const apiLogGroup = new cdk.aws_logs.LogGroup(this, 'ApiAccessLogs', {

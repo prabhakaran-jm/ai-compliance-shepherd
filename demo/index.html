@@ -289,9 +289,6 @@
                                 <button class="btn btn-warning btn-demo" onclick="simulateComplianceScan()">
                                     <i class="bi bi-search"></i> Compliance Scan
                                 </button>
-                                <button class="btn btn-info btn-demo" onclick="showArchitecture()">
-                                    <i class="bi bi-diagram-3"></i> Architecture
-                                </button>
                                 <button class="btn btn-secondary btn-demo" onclick="clearResponses()">
                                     <i class="bi bi-trash"></i> Clear
                                 </button>
@@ -456,31 +453,6 @@
             }
         }
 
-        function showArchitecture() {
-            const architecture = {
-                "platform": "AI Compliance Shepherd",
-                "architecture": "Microservices",
-                "aiServices": [
-                    "AWS Bedrock (Claude 3.5 Sonnet)",
-                    "AWS Bedrock AgentCore",
-                    "Knowledge Base with RAG",
-                    "Step Functions Orchestration"
-                ],
-                "awsServices": [
-                    "Lambda Functions (19 microservices)",
-                    "API Gateway",
-                    "DynamoDB",
-                    "S3 Storage",
-                    "CloudWatch Monitoring",
-                    "KMS Encryption"
-                ],
-                "deployment": "AWS CDK Infrastructure as Code",
-                "businessImpact": "80% cost reduction, $100K+ annual savings"
-            };
-            
-            updateResponse(`Platform Architecture:\n${JSON.stringify(architecture, null, 2)}`);
-        }
-
         function clearResponses() {
             document.getElementById('responseArea').textContent = 'Responses cleared. Ready for new tests...';
         }
@@ -521,13 +493,28 @@
             const now = new Date();
             const timeString = now.toLocaleTimeString();
             
-            messageDiv.innerHTML = `
-                <div class="message-content">
-                    <strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> 
-                    <div class="message-text">${message}</div>
-                </div>
-                <div class="message-time text-muted small">${timeString}</div>
-            `;
+            // Check if message contains HTML tags
+            const isHtml = /<[^>]*>/g.test(message);
+            
+            if (isHtml) {
+                // For HTML content, use innerHTML
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> 
+                        <div class="message-text">${message}</div>
+                    </div>
+                    <div class="message-time text-muted small">${timeString}</div>
+                `;
+            } else {
+                // For plain text, preserve line breaks
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> 
+                        <div class="message-text">${message.replace(/\n/g, '<br>')}</div>
+                    </div>
+                    <div class="message-time text-muted small">${timeString}</div>
+                `;
+            }
             
             chatMessages.appendChild(messageDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -687,8 +674,7 @@
                 </div>`;
             
             if (findings.length > 0) {
-                html += `
-                <div class="findings-table">
+                html += `<div class="findings-table">
                     <h5>🔍 Compliance Findings</h5>
                     <table class="table table-striped table-sm">
                         <thead>
@@ -709,28 +695,23 @@
                                         finding.severity === 'MEDIUM' ? 'info' : 'secondary';
                     const autoFixIcon = finding.autoRemediable ? '✅' : '❌';
                     
-                    html += `
-                        <tr>
-                            <td><span class="badge bg-${severityClass}">${finding.severity}</span></td>
-                            <td>${finding.category}</td>
-                            <td>${finding.title}</td>
-                            <td><code>${finding.resource}</code></td>
-                            <td>${autoFixIcon}</td>
-                            <td>$${finding.estimatedCost || 0}</td>
-                        </tr>`;
+                    html += `<tr>
+                        <td><span class="badge bg-${severityClass}">${finding.severity}</span></td>
+                        <td>${finding.category}</td>
+                        <td>${finding.title}</td>
+                        <td><code>${finding.resource}</code></td>
+                        <td>${autoFixIcon}</td>
+                        <td>$${finding.estimatedCost || 0}</td>
+                    </tr>`;
                 });
                 
-                html += `
-                        </tbody>
-                    </table>
-                </div>`;
+                html += `</tbody></table></div>`;
             } else {
                 html += `<div class="no-findings"><p>✅ No compliance issues found!</p></div>`;
             }
             
             if (aiInsights.recommendedActions && aiInsights.recommendedActions.length > 0) {
-                html += `
-                <div class="recommendations">
+                html += `<div class="recommendations">
                     <h5>💡 Recommended Actions</h5>
                     <ul>`;
                 aiInsights.recommendedActions.forEach(action => {

@@ -1,0 +1,21 @@
+{
+  "version": "48.0.0",
+  "files": {
+    "b56addf6d318cc38da2092d544120d4670cb9235b1fa199c6d31d413104ba9d2": {
+      "displayName": "AiComplianceAgentStack Template",
+      "source": {
+        "path": "AiComplianceAgentStack.template.json",
+        "packaging": "file"
+      },
+      "destinations": {
+        "556274720247-us-east-1-68163af1": {
+          "bucketName": "cdk-hnb659fds-assets-556274720247-us-east-1",
+          "objectKey": "b56addf6d318cc38da2092d544120d4670cb9235b1fa199c6d31d413104ba9d2.json",
+          "region": "us-east-1",
+          "assumeRoleArn": "arn:${AWS::Partition}:iam::556274720247:role/cdk-hnb659fds-file-publishing-role-556274720247-us-east-1"
+        }
+      }
+    }
+  },
+  "dockerImages": {}
+}

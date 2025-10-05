@@ -96,6 +96,99 @@
             color: #666;
             font-style: italic;
         }
+        
+        /* Enhanced styling for scan results in chat */
+        .scan-results {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        
+        .scan-results h4 {
+            color: #0d6efd;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .scan-results h5 {
+            color: #495057;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        
+        .scan-summary {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .scan-summary p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        .findings-table {
+            overflow-x: auto;
+        }
+        
+        .findings-table table {
+            font-size: 0.8em;
+            margin-bottom: 0;
+        }
+        
+        .findings-table th {
+            background-color: #e9ecef;
+            font-weight: 600;
+            padding: 8px 6px;
+        }
+        
+        .findings-table td {
+            padding: 6px;
+            vertical-align: middle;
+        }
+        
+        .findings-table code {
+            font-size: 0.75em;
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .no-findings {
+            text-align: center;
+            padding: 20px;
+            color: #28a745;
+            font-weight: 500;
+        }
+        
+        .recommendations {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+        
+        .recommendations ul {
+            margin-bottom: 0;
+        }
+        
+        .recommendations li {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        
+        .message-text {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .message-text table {
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -430,7 +523,8 @@
             
             messageDiv.innerHTML = `
                 <div class="message-content">
-                    <strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> ${message}
+                    <strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> 
+                    <div class="message-text">${message}</div>
                 </div>
                 <div class="message-time text-muted small">${timeString}</div>
             `;
@@ -509,28 +603,169 @@
             }
         }
 
+        // Enhanced scan functions for chat interface with tabular results
+        async function performS3ScanForChat() {
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scanType: 'general',
+                        regions: ['us-east-1'],
+                        services: ['s3'],
+                        useRealScanning: true
+                    })
+                });
+                
+                const data = await response.json();
+                displayScanResultsInChat(data, 'S3 Compliance Scan Results');
+                
+            } catch (error) {
+                addMessageToChat(`❌ S3 Scan Failed: ${error.message}`, 'bot');
+            }
+        }
+
+        async function performIAMScanForChat() {
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scanType: 'general',
+                        regions: ['us-east-1'],
+                        services: ['iam'],
+                        useRealScanning: true
+                    })
+                });
+                
+                const data = await response.json();
+                displayScanResultsInChat(data, 'IAM Compliance Scan Results');
+                
+            } catch (error) {
+                addMessageToChat(`❌ IAM Scan Failed: ${error.message}`, 'bot');
+            }
+        }
+
+        async function performFullScanForChat() {
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scanType: 'general',
+                        regions: ['us-east-1'],
+                        services: ['s3', 'iam', 'ec2'],
+                        useRealScanning: true
+                    })
+                });
+                
+                const data = await response.json();
+                displayScanResultsInChat(data, 'Comprehensive Compliance Scan Results');
+                
+            } catch (error) {
+                addMessageToChat(`❌ Full Scan Failed: ${error.message}`, 'bot');
+            }
+        }
+
+        function displayScanResultsInChat(scanData, title) {
+            const findings = scanData.findings || [];
+            const aiInsights = scanData.aiInsights || {};
+            
+            let html = `<div class="scan-results">
+                <h4>📊 ${title}</h4>
+                <div class="scan-summary">
+                    <p><strong>Compliance Score:</strong> ${aiInsights.complianceScore || 'N/A'}%</p>
+                    <p><strong>Total Findings:</strong> ${aiInsights.totalFindings || findings.length}</p>
+                    <p><strong>Auto-remediable:</strong> ${aiInsights.autoRemediableFindings || 0}</p>
+                    <p><strong>Estimated Annual Savings:</strong> $${aiInsights.estimatedAnnualSavings || 0}</p>
+                </div>`;
+            
+            if (findings.length > 0) {
+                html += `
+                <div class="findings-table">
+                    <h5>🔍 Compliance Findings</h5>
+                    <table class="table table-striped table-sm">
+                        <thead>
+                            <tr>
+                                <th>Severity</th>
+                                <th>Category</th>
+                                <th>Title</th>
+                                <th>Resource</th>
+                                <th>Auto-Fix</th>
+                                <th>Cost Impact</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                
+                findings.forEach(finding => {
+                    const severityClass = finding.severity === 'Critical' ? 'danger' : 
+                                        finding.severity === 'HIGH' ? 'warning' : 
+                                        finding.severity === 'MEDIUM' ? 'info' : 'secondary';
+                    const autoFixIcon = finding.autoRemediable ? '✅' : '❌';
+                    
+                    html += `
+                        <tr>
+                            <td><span class="badge bg-${severityClass}">${finding.severity}</span></td>
+                            <td>${finding.category}</td>
+                            <td>${finding.title}</td>
+                            <td><code>${finding.resource}</code></td>
+                            <td>${autoFixIcon}</td>
+                            <td>$${finding.estimatedCost || 0}</td>
+                        </tr>`;
+                });
+                
+                html += `
+                        </tbody>
+                    </table>
+                </div>`;
+            } else {
+                html += `<div class="no-findings"><p>✅ No compliance issues found!</p></div>`;
+            }
+            
+            if (aiInsights.recommendedActions && aiInsights.recommendedActions.length > 0) {
+                html += `
+                <div class="recommendations">
+                    <h5>💡 Recommended Actions</h5>
+                    <ul>`;
+                aiInsights.recommendedActions.forEach(action => {
+                    html += `<li>${action}</li>`;
+                });
+                html += `</ul></div>`;
+            }
+            
+            html += `</div>`;
+            
+            addMessageToChat(html, 'bot');
+        }
+
         function generateAIResponse(userMessage) {
             const message = userMessage.toLowerCase();
             
             // AI responses based on user input
             if (message.includes('scan') && message.includes('s3') && (message.includes('bucket') || message.includes('storage'))) {
                 // Trigger S3-only scan when user specifically asks for S3 scan
-                setTimeout(() => {
-                    performS3Scan();
+                setTimeout(async () => {
+                    await performS3ScanForChat();
                 }, 1000);
-                return `Perfect! I'm starting a **focused S3 compliance scan** with real AWS API calls. This will analyze your S3 buckets for:\n\n🔒 **Encryption**: Server-side encryption (AES-256/KMS)\n🚫 **Public Access**: Block public access settings\n📋 **Versioning**: Object versioning and lifecycle policies\n🔐 **Access Logging**: CloudTrail and access logging\n📊 **Cost Optimization**: Lifecycle policies and storage classes\n\nPlease check the API Demo section for the detailed S3 scan results!`;
+                return `🔍 **Starting S3 Compliance Scan**\n\nAnalyzing your S3 buckets for:\n• 🔒 Encryption compliance\n• 🚫 Public access controls\n• 📋 Versioning policies\n• 🔐 Access logging\n• 📊 Cost optimization\n\nScanning in progress...`;
             } else if (message.includes('scan') && message.includes('iam') && (message.includes('permission') || message.includes('role') || message.includes('user'))) {
                 // Trigger IAM-only scan when user specifically asks for IAM scan
-                setTimeout(() => {
-                    performIAMScan();
+                setTimeout(async () => {
+                    await performIAMScanForChat();
                 }, 1000);
-                return `Excellent! I'm starting a **focused IAM compliance scan** with real AWS API calls. This will analyze your IAM setup for:\n\n👤 **User Management**: MFA requirements, unused accounts\n🔑 **Role Permissions**: Principle of least privilege violations\n📋 **Policy Analysis**: Overly broad permissions and policies\n🔍 **Access Patterns**: Unusual or excessive access patterns\n\nPlease check the API Demo section for the detailed IAM scan results!`;
+                return `🔍 **Starting IAM Compliance Scan**\n\nAnalyzing your IAM setup for:\n• 👤 User management\n• 🔑 Role permissions\n• 📋 Policy analysis\n• 🔍 Access patterns\n\nScanning in progress...`;
             } else if (message.includes('start') && (message.includes('scan') || message.includes('compliance')) && !message.includes('s3') && !message.includes('iam')) {
                 // Trigger full scan when user says "start compliance scan" (not service-specific)
-                setTimeout(() => {
-                    simulateComplianceScan();
+                setTimeout(async () => {
+                    await performFullScanForChat();
                 }, 1000);
-                return `Excellent! I'm initiating a **comprehensive compliance scan** with real AWS API calls. This will analyze S3 buckets, IAM policies, and EC2 instances for security and compliance issues using actual AWS resources. Please check the API Demo section for the scan results!`;
+                return `🔍 **Starting Comprehensive Compliance Scan**\n\nAnalyzing your AWS infrastructure:\n• 🪣 S3 buckets\n• 👤 IAM policies\n• 🖥️ EC2 instances\n• 🔐 Security configurations\n\nScanning in progress...`;
             } else if (message.includes('scan') || message.includes('compliance')) {
                 return `I can help you scan your AWS infrastructure for compliance issues! I can perform **focused scans** on specific services or **comprehensive scans** across your entire environment. What would you like me to scan?\n\n• **S3 Buckets**: Check encryption, public access, versioning\n• **IAM Policies**: Analyze permissions and access controls\n• **EC2 Instances**: Review security groups and configurations\n• **Full Infrastructure**: Complete compliance analysis\n\n**Try these specific commands:**\n• "Scan my S3 buckets for compliance issues"\n• "Check my IAM permissions"\n• "Start a full compliance scan"\n\nJust tell me what you'd like to scan!`;
             } else if (message.includes('s3') || message.includes('bucket')) {

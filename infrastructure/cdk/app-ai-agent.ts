@@ -1437,7 +1437,7 @@ def generate_ai_insights(findings, services):
 
     // CORS settings
     const allowOrigin = 'https://demo.cloudaimldevops.com';
-    const allowHeaders = 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token';
+    const allowHeaders = '*';  // Allow all headers for preflight
     const allowMethods = 'GET,POST,OPTIONS';
 
     // Helper to add MOCK OPTIONS on a resource
@@ -1503,7 +1503,7 @@ def generate_ai_insights(findings, services):
     // Explicit deployment and stage with dependencies on main methods only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v9-cors-mock'
+      description: 'v10-cors-all-headers'
     });
     // Depend on main methods only - MockIntegration OPTIONS don't need dependencies
     deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);

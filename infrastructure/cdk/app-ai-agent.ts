@@ -1425,31 +1425,50 @@ def generate_ai_insights(findings, services):
       })
     });
 
-    // API Gateway for the AI Agent
+    // API Gateway for the AI Agent with CORS configuration
     const api = new cdk.aws_apigateway.RestApi(this, 'AiComplianceAgentApiV2', {
       restApiName: 'AI Compliance Agent API',
       description: 'API for AI Compliance Agent powered by Bedrock AgentCore - Enhanced with Real Scanning',
       endpointConfiguration: {
         types: [cdk.aws_apigateway.EndpointType.REGIONAL]
       },
+      deploy: false,
       defaultCorsPreflightOptions: {
         allowOrigins: ['https://demo.cloudaimldevops.com'],
         allowMethods: ['GET', 'POST', 'OPTIONS'],
-        allowHeaders: [
-          'Content-Type',
-          'X-Amz-Date',
-          'Authorization',
-          'X-Api-Key',
-          'X-Amz-Security-Token'
-        ],
-        allowCredentials: true,
-        statusCode: 200
-      },
-      deploy: false
+        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token'],
+        allowCredentials: false
+      }
     });
 
-    // Lambda integration
-    const lambdaIntegration = new cdk.aws_apigateway.LambdaIntegration(complianceScannerLambda);
+    // Lambda integration with CORS headers
+    const lambdaIntegration = new cdk.aws_apigateway.LambdaIntegration(complianceScannerLambda, {
+      proxy: true,
+      integrationResponses: [{
+        statusCode: '200',
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
+          'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'"
+        }
+      }]
+    });
+
+    // Mock integration for OPTIONS requests to handle preflight
+    const corsIntegration = new cdk.aws_apigateway.MockIntegration({
+      integrationResponses: [{
+        statusCode: '200',
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
+          'method.response.header.Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'"
+        }
+      }],
+      passthroughBehavior: cdk.aws_apigateway.PassthroughBehavior.NEVER,
+      requestTemplates: {
+        'application/json': '{"statusCode": 200}'
+      }
+    });
 
     // Capture resources and methods so we can depend on them
     const scanRes   = api.root.addResource('scan');
@@ -1457,25 +1476,77 @@ def generate_ai_insights(findings, services):
     const agentRes  = api.root.addResource('agent');
     const remediateRes = api.root.addResource('remediate');
 
+    // Method response template with CORS headers
+    const methodResponseParameters = {
+      'method.response.header.Access-Control-Allow-Origin': false,
+      'method.response.header.Access-Control-Allow-Headers': false,
+      'method.response.header.Access-Control-Allow-Methods': false
+    };
+
     const scanPost   = scanRes.addMethod('POST', lambdaIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [{
+        statusCode: '200',
+        responseParameters: methodResponseParameters
+      }]
     });
-    const healthGet  = healthRes.addMethod('GET',  lambdaIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    const healthGet  = healthRes.addMethod('GET', lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [{
+        statusCode: '200',
+        responseParameters: methodResponseParameters
+      }]
     });
     const agentPost  = agentRes.addMethod('POST', lambdaIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [{
+        statusCode: '200',
+        responseParameters: methodResponseParameters
+      }]
     });
     const remediatePost = remediateRes.addMethod('POST', lambdaIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [{
+        statusCode: '200',
+        responseParameters: methodResponseParameters
+      }]
     });
+
+    // Add explicit OPTIONS methods for proper CORS preflight handling
+    const corsOptionsResponse = {
+      statusCode: '200',
+      responseParameters: {
+        'method.response.header.Access-Control-Allow-Headers': true,
+        'method.response.header.Access-Control-Allow-Methods': true,
+        'method.response.header.Access-Control-Allow-Origin': true
+      }
+    };
+
+    scanRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [corsOptionsResponse]
+    });
+    healthRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [corsOptionsResponse]
+    });
+    agentRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [corsOptionsResponse]
+    });
+    remediateRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [corsOptionsResponse]
+    });
+
+    // CORS is now handled by explicit OPTIONS methods above
 
 
 
     // Explicit deployment and stage with dependencies on main methods only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v13-gemini-cors-fix'
+      description: 'v15-fixed-cors-preflight'
     });
     deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);
 

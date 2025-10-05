@@ -1477,10 +1477,18 @@ def generate_ai_insights(findings, services):
     const agentRes  = api.root.addResource('agent');
     const remediateRes = api.root.addResource('remediate');
 
-    const scanPost   = scanRes.addMethod('POST', lambdaIntegration);
-    const healthGet  = healthRes.addMethod('GET',  lambdaIntegration);
-    const agentPost  = agentRes.addMethod('POST', lambdaIntegration);
-    const remediatePost = remediateRes.addMethod('POST', lambdaIntegration);
+    const scanPost   = scanRes.addMethod('POST', lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+    const healthGet  = healthRes.addMethod('GET',  lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+    const agentPost  = agentRes.addMethod('POST', lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+    const remediatePost = remediateRes.addMethod('POST', lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
 
     // Add OPTIONS to root and each path using MockIntegration
     addMockOptions(api.root);
@@ -1503,7 +1511,7 @@ def generate_ai_insights(findings, services):
     // Explicit deployment and stage with dependencies on main methods only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v5' // bump to v5 for CORS fix
+      description: 'v6' // bump to v6 for authentication fix
     });
     // Depend on main methods only - MockIntegration OPTIONS don't need dependencies
     deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);

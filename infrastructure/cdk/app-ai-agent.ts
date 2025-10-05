@@ -1432,13 +1432,7 @@ def generate_ai_insights(findings, services):
       endpointConfiguration: {
         types: [cdk.aws_apigateway.EndpointType.REGIONAL]
       },
-      deploy: false,
-      defaultCorsPreflightOptions: {
-        allowOrigins: ['https://demo.cloudaimldevops.com'],
-        allowMethods: ['GET', 'POST', 'OPTIONS'],
-        allowHeaders: ['Content-Type', 'X-Amz-Date', 'Authorization', 'X-Api-Key', 'X-Amz-Security-Token'],
-        allowCredentials: false
-      }
+      deploy: false
     });
 
     // Lambda integration with CORS headers
@@ -1516,9 +1510,9 @@ def generate_ai_insights(findings, services):
     const corsOptionsResponse = {
       statusCode: '200',
       responseParameters: {
-        'method.response.header.Access-Control-Allow-Headers': true,
-        'method.response.header.Access-Control-Allow-Methods': true,
-        'method.response.header.Access-Control-Allow-Origin': true
+        'method.response.header.Access-Control-Allow-Headers': false,
+        'method.response.header.Access-Control-Allow-Methods': false,
+        'method.response.header.Access-Control-Allow-Origin': false
       }
     };
 
@@ -1546,7 +1540,7 @@ def generate_ai_insights(findings, services):
     // Explicit deployment and stage with dependencies on main methods only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v15-fixed-cors-preflight'
+      description: 'v16-fixed-method-responses'
     });
     deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);
 

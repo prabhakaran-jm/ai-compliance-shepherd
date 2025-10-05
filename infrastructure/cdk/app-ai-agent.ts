@@ -1456,19 +1456,67 @@ def generate_ai_insights(findings, services):
     const agentPost  = agentRes.addMethod('POST', lambdaIntegration);
     const remediatePost = remediateRes.addMethod('POST', lambdaIntegration);
 
-    // Add CORS preflight after methods are created
-    const scanCors = scanRes.addCorsPreflight(cors);
-    const healthCors = healthRes.addCorsPreflight(cors);
-    const agentCors = agentRes.addCorsPreflight(cors);
-    const remediateCors = remediateRes.addCorsPreflight(cors);
+    // Create CORS Lambda function
+    const corsLambda = new cdk.aws_lambda.Function(this, 'CorsLambda', {
+      runtime: cdk.aws_lambda.Runtime.PYTHON_3_9,
+      handler: 'index.handler',
+      code: cdk.aws_lambda.Code.fromInline(`
+def handler(event, context):
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Access-Control-Allow-Origin': 'https://demo.cloudaimldevops.com',
+            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+            'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+            'Access-Control-Max-Age': '86400'
+        },
+        'body': ''
+    }
+`),
+      description: 'CORS handler for API Gateway OPTIONS requests'
+    });
+
+    const corsIntegration = new cdk.aws_apigateway.LambdaIntegration(corsLambda);
+
+    // Create explicit OPTIONS methods with mock integrations for CORS
+    const mockIntegration = new cdk.aws_apigateway.MockIntegration({
+      integrationResponses: [{
+        statusCode: '200',
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
+          'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
+          'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
+          'method.response.header.Access-Control-Max-Age': "'86400'"
+        }
+      }],
+      requestTemplates: {
+        'application/json': '{"statusCode": 200}'
+      }
+    });
+
+    const scanOptions = scanRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+
+    const healthOptions = healthRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+
+    const agentOptions = agentRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+
+    const remediateOptions = remediateRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
 
     // Explicit deployment and stage with dependencies on ALL methods including CORS
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v3' // bump to v3 when routes change - force redeploy for CORS fix
+      description: 'v4' // bump to v4 when routes change - force redeploy for CORS fix
     });
-    // Depend on all methods including CORS OPTIONS methods
-    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost, scanCors, healthCors, agentCors, remediateCors);
+    // Depend on all methods including explicit OPTIONS methods
+    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost, scanOptions, healthOptions, agentOptions, remediateOptions);
 
     // API access logs for monitoring
     const apiLogGroup = new cdk.aws_logs.LogGroup(this, 'ApiAccessLogs', {

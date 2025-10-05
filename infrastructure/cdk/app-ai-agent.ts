@@ -301,8 +301,26 @@ def scan_s3_resources(regions: List[str]) -> List[Dict[str, Any]]:
     return findings
 
 def scan_iam_resources() -> List[Dict[str, Any]]:
-    """Real IAM resource scanning"""
+    """Real IAM resource scanning with CDK exclusion"""
     findings = []
+    
+    # Resources to exclude from scanning (CDK managed, not security-critical)
+    excluded_patterns = [
+        'AiComplianceAgentStack-',  # CDK stack roles
+        'cdk-',  # CDK managed roles
+        'aws-cdk-',  # AWS CDK roles
+        'cloudformation-',  # CloudFormation roles
+        'amplify-',  # Amplify roles
+        'lambda-',  # Lambda execution roles
+        'serverless-',  # Serverless framework roles
+        'AWSServiceRoleFor',  # AWS service roles
+        'aws-',  # AWS managed roles
+    ]
+    
+    def should_exclude_role(role_name: str) -> bool:
+        """Check if IAM role should be excluded from compliance scanning"""
+        role_lower = role_name.lower()
+        return any(pattern.lower() in role_lower for pattern in excluded_patterns)
     
     try:
         iam_client = boto3.client('iam')
@@ -313,6 +331,11 @@ def scan_iam_resources() -> List[Dict[str, Any]]:
         for page in paginator.paginate():
             for role in page['Roles']:
                 role_name = role['RoleName']
+                
+                # Skip CDK managed and AWS service roles
+                if should_exclude_role(role_name):
+                    print(f"Skipping CDK/AWS managed role: {role_name}")
+                    continue
                 
                 try:
                     # Get role policies
@@ -349,8 +372,36 @@ def scan_iam_resources() -> List[Dict[str, Any]]:
     return findings
 
 def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
-    """Real EC2 resource scanning"""
+    """Real EC2 resource scanning with CDK exclusion"""
     findings = []
+    
+    # Resources to exclude from scanning (CDK managed, not security-critical)
+    excluded_patterns = [
+        'cdk-',  # CDK managed instances
+        'aws-cdk-',  # AWS CDK instances
+        'cloudformation-',  # CloudFormation instances
+        'amplify-',  # Amplify instances
+        'lambda-',  # Lambda instances
+        'serverless-',  # Serverless framework instances
+    ]
+    
+    def should_exclude_instance(instance_id: str, tags: List[Dict]) -> bool:
+        """Check if EC2 instance should be excluded from compliance scanning"""
+        # Check instance ID patterns
+        instance_lower = instance_id.lower()
+        if any(pattern in instance_lower for pattern in excluded_patterns):
+            return True
+        
+        # Check tags for CDK/AWS managed instances
+        for tag in tags:
+            tag_key = tag.get('Key', '').lower()
+            tag_value = tag.get('Value', '').lower()
+            if 'cdk' in tag_key or 'cdk' in tag_value:
+                return True
+            if 'aws-cdk' in tag_value:
+                return True
+        
+        return False
     
     try:
         for region in regions:
@@ -365,6 +416,12 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
                         for instance in reservation['Instances']:
                             instance_id = instance['InstanceId']
                             state = instance['State']['Name']
+                            tags = instance.get('Tags', [])
+                            
+                            # Skip CDK managed instances
+                            if should_exclude_instance(instance_id, tags):
+                                print(f"Skipping CDK/AWS managed instance: {instance_id}")
+                                continue
                             
                             if state == 'running':
                                 # Check security groups

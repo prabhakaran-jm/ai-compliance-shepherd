@@ -254,7 +254,7 @@ main() {
     create_non_compliant_security_group
     
     # Optional EC2 instance (commented out to avoid charges)
-    # create_non_compliant_ec2_instance
+    create_non_compliant_ec2_instance
     
     # Show cleanup commands
     show_cleanup_commands

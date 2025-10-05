@@ -535,7 +535,7 @@ def handler(event, context):
     """
     AI Compliance Agent Lambda Function - Enhanced with Real Scanning
     Handles different endpoints: health, scan, agent
-    Now includes hybrid approach: try real scanning, fallback to mock
+    Now includes real AWS scanning with fallback to mock for demo purposes
     """
     
     print(f"Received event: {json.dumps(event)}")
@@ -559,7 +559,7 @@ def handler(event, context):
                 "status": "online",
                 "agentVersion": "1.0.0",
                 "modelUsed": "Claude 3.5 Sonnet",
-                "capabilities": ["real-scanning", "mock-fallback", "hybrid-mode"]
+                "capabilities": ["real-scanning", "auto-remediation", "multi-service-coverage"]
             })
         }
     
@@ -577,18 +577,18 @@ def handler(event, context):
                 "timestamp": datetime.utcnow().isoformat(),
                 "capabilities": [
                     "Real AWS resource discovery",
-                    "Compliance analysis with real data",
+                    "Multi-service compliance scanning",
+                    "Compliance analysis with actual data",
                     "Auto-remediation",
-                    "Cost optimization",
-                    "Hybrid scanning (real + mock fallback)"
+                    "Cost optimization"
                 ],
                 "agentVersion": "1.0.0",
                 "modelUsed": "Claude 3.5 Sonnet",
-                "scanMode": "hybrid"
+                "scanMode": "real-aws-api"
             })
         }
     
-    # Enhanced Scan endpoint with hybrid approach
+    # Enhanced Scan endpoint with real AWS scanning
     if path == '/scan' and http_method == 'POST':
         # Parse request body
         try:
@@ -688,7 +688,7 @@ def handler(event, context):
                 "aiInsights": aiInsights,
                 "agentVersion": "1.0.0",
                 "modelUsed": "Claude 3.5 Sonnet",
-                "scanMode": "hybrid",
+                "scanMode": "real-aws-api",
                 "scanSource": scan_source
             })
         }

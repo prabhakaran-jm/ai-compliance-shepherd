@@ -1163,10 +1163,8 @@
 
             updateResponse(`🔧 Found ${autoRemediableFindings.length} auto-remediable issues. Starting remediation...`);
             
-            // Show progress tracker
             showRemediationProgress(autoRemediableFindings.length);
             
-            // Update initial items with actual finding titles and risk indicators
             const detailsDiv = document.getElementById('remediationDetails');
             const items = detailsDiv.querySelectorAll('.remediation-item');
             autoRemediableFindings.forEach((finding, index) => {
@@ -1185,12 +1183,10 @@
                     updateResponse(`🔧 Remediating: ${finding.title}`);
                     updateRemediationItem(i, 'in-progress');
                     
-                    // Check if high-risk remediation requires confirmation
                     if (risk.level === 'critical' || risk.level === 'high') {
                         updateResponse(`⚠️ High-risk remediation detected: ${finding.title}. Showing safety confirmation...`);
                         showSafetyConfirmation(finding);
                         
-                        // Wait for user confirmation before proceeding
                         await waitForSafetyConfirmation();
                     }
                     
@@ -1200,7 +1196,22 @@
                     
                     if (remediationResult.executionArn) {
                         updateResponse(`✅ Remediation workflow started: ${finding.title}\nExecution ARN: ${remediationResult.executionArn}`);
-                        updateRemediationItem(i, 'completed');
+                        
+                        const poll = async () => {
+                            const statusResult = await checkExecutionStatus(remediationResult.executionArn);
+                            const body = JSON.parse(statusResult.body)
+                            if (body.status === 'SUCCEEDED') {
+                                updateRemediationItem(i, 'completed');
+                                updateResponse(`✅ Remediation completed successfully for: ${finding.title}`);
+                            } else if (body.status === 'FAILED') {
+                                updateRemediationItem(i, 'failed');
+                                updateResponse(`❌ Remediation failed for: ${finding.title}`);
+                            } else {
+                                setTimeout(poll, 5000); // Poll every 5 seconds
+                            }
+                        };
+                        setTimeout(poll, 5000);
+
                     } else {
                         const errorMsg = remediationResult.error || remediationResult.details || 'Unknown error';
                         updateResponse(`❌ Failed to start remediation: ${finding.title} - ${errorMsg}`);
@@ -1211,11 +1222,25 @@
                     updateRemediationItem(i, 'failed');
                 }
                 
-                // Add small delay for better UX
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
 
             updateResponse('🎉 Auto-Remediation process completed!');
+        }
+
+        async function checkExecutionStatus(executionArn) {
+            const response = await fetch(`${API_BASE}/remediation-status`, {
+                method: 'POST',
+                mode: 'cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: 'checkExecutionStatus',
+                    executionArn: executionArn
+                })
+            });
+            return await response.json();
         }
 
         function waitForSafetyConfirmation() {

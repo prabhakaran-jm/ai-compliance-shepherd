@@ -734,25 +734,41 @@ def handler(event, context):
             finding_ids, tenant_id, approval_required, dry_run, started_by
         )
         
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-                "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
-            },
-            "body": json.dumps({
-                "message": "Remediation workflow triggered",
-                "findingIds": finding_ids,
-                "tenantId": tenant_id,
-                "approvalRequired": approval_required,
-                "dryRun": dry_run,
-                "executionArn": remediation_result.get('executionArn', ''),
-                "executionName": remediation_result.get('executionName', ''),
-                "status": remediation_result.get('status', 'STARTED'),
-                "timestamp": datetime.utcnow().isoformat()
-            })
-        }
+        if remediation_result.get('success', False):
+            return {
+                "statusCode": 200,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+                    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+                },
+                "body": json.dumps({
+                    "message": "Remediation workflow triggered",
+                    "findingIds": finding_ids,
+                    "tenantId": tenant_id,
+                    "approvalRequired": approval_required,
+                    "dryRun": dry_run,
+                    "executionArn": remediation_result.get('executionArn', ''),
+                    "executionName": remediation_result.get('executionName', ''),
+                    "status": remediation_result.get('status', 'STARTED'),
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            }
+        else:
+            return {
+                "statusCode": 500,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+                    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+                },
+                "body": json.dumps({
+                    "error": "Failed to trigger remediation workflow",
+                    "details": remediation_result.get('details', 'Unknown error'),
+                    "findingIds": finding_ids,
+                    "timestamp": datetime.utcnow().isoformat()
+                })
+            }
     
     # Remediation action handlers for Step Functions workflow
     if 'action' in event:
@@ -1105,6 +1121,27 @@ def trigger_remediation_workflow(finding_ids, tenant_id, approval_required, dry_
         
         # Start Step Functions execution
         sfn_client = boto3.client('stepfunctions')
+        
+        # Check if state machine exists
+        try:
+            sfn_client.describe_state_machine(stateMachineArn=state_machine_arn)
+        except sfn_client.exceptions.StateMachineDoesNotExist:
+            return {
+                "success": False,
+                "executionArn": "",
+                "executionName": "",
+                "status": "FAILED",
+                "details": f"Step Functions state machine 'RemediationWorkflow' does not exist"
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "executionArn": "",
+                "executionName": "",
+                "status": "FAILED",
+                "details": f"Error checking state machine: {str(e)}"
+            }
+        
         response = sfn_client.start_execution(
             stateMachineArn=state_machine_arn,
             name=execution_name,

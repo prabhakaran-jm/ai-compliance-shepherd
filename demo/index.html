@@ -1192,11 +1192,14 @@
                     
                     const remediationResult = await performRemediation(finding);
                     
+                    console.log('Remediation result:', remediationResult);
+                    
                     if (remediationResult.executionArn) {
                         updateResponse(`✅ Remediation workflow started: ${finding.title}\nExecution ARN: ${remediationResult.executionArn}`);
                         updateRemediationItem(i, 'completed');
                     } else {
-                        updateResponse(`❌ Failed to start remediation: ${finding.title} - ${remediationResult.details || 'Unknown error'}`);
+                        const errorMsg = remediationResult.error || remediationResult.details || 'Unknown error';
+                        updateResponse(`❌ Failed to start remediation: ${finding.title} - ${errorMsg}`);
                         updateRemediationItem(i, 'failed');
                     }
                 } catch (error) {

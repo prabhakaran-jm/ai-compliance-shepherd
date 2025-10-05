@@ -1234,6 +1234,7 @@
                 // Call remediation API endpoint
                 const response = await fetch(`${API_BASE}/remediate`, {
                     method: 'POST',
+                    mode: 'cors',
                     headers: {
                         'Content-Type': 'application/json'
                     },

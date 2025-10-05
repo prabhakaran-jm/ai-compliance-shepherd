@@ -1268,10 +1268,12 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        findings: [finding],
                         tenantId: 'demo-tenant',
-                        approvalRequired: false, // Set to true for production
-                        dryRun: false, // Set to true for testing
+                        parameters: {
+                            findings: [finding],
+                            approvalRequired: false, // Set to true for production
+                            dryRun: false // Set to true for testing
+                        },
                         startedBy: 'ai-compliance-shepherd-ui'
                     })
                 });

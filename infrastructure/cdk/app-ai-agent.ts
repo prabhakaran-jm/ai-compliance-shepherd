@@ -488,7 +488,9 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
         'BEDROCK_MODEL_ID': 'anthropic.claude-3-5-sonnet-20241022-v2:0',
         'FINDINGS_TABLE_NAME': findingsTable.tableName
       },
-      logRetention: cdk.aws_logs.RetentionDays.ONE_WEEK
+      logGroup: new cdk.aws_logs.LogGroup(this, 'RealScannerLogGroup', {
+        retention: cdk.aws_logs.RetentionDays.ONE_WEEK
+      })
     });
 
     // Grant real scanner permissions for AWS resource access
@@ -1206,7 +1208,9 @@ def generate_ai_insights(findings, services):
         'REAL_SCANNER_FN': realResourceScannerLambda.functionName,
         'FINDINGS_TABLE_NAME': findingsTable.tableName
       },
-      logRetention: cdk.aws_logs.RetentionDays.ONE_WEEK
+      logGroup: new cdk.aws_logs.LogGroup(this, 'ComplianceScannerLogGroup', {
+        retention: cdk.aws_logs.RetentionDays.ONE_WEEK
+      })
     });
 
     // Grant Bedrock permissions to the Lambda
@@ -1431,7 +1435,7 @@ def generate_ai_insights(findings, services):
     });
 
     const cors = {
-      allowOrigins: ['*', 'https://demo.cloudaimldevops.com'],
+      allowOrigins: ['https://demo.cloudaimldevops.com'],
       allowHeaders: ['Content-Type','X-Amz-Date','Authorization','X-Api-Key','X-Amz-Security-Token'],
       allowMethods: ['GET','POST','OPTIONS'],
       allowCredentials: false,

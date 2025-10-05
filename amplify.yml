@@ -3,20 +3,20 @@ frontend:
   phases:
     preBuild:
       commands:
-        - echo "Preparing AI Compliance Shepherd Demo for deployment..."
-        - echo "Checking demo directory contents..."
+        - echo "Preparing AI Compliance Shepherd Demo for deployment"
+        - echo "Checking demo directory contents"
         - ls -la demo/
     build:
       commands:
-        - echo "Building AI Compliance Shepherd Demo..."
-        - echo "Copying demo files to build directory..."
+        - echo "Building AI Compliance Shepherd Demo"
+        - echo "Copying demo files to build directory"
         - cp demo/* .
-        - echo "Verifying copied files..."
+        - echo "Verifying copied files"
         - ls -la
     postBuild:
       commands:
-        - echo "Post-build: AI Compliance Shepherd Demo ready for deployment"
-        - echo "Build completed successfully!"
+        - echo "Post-build AI Compliance Shepherd Demo ready for deployment"
+        - echo "Build completed successfully"
   artifacts:
     baseDirectory: .
     files:

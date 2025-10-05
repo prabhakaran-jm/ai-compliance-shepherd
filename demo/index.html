@@ -643,6 +643,29 @@
             }
         }
 
+        async function performEC2ScanForChat() {
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scanType: 'general',
+                        regions: ['us-east-1'],
+                        services: ['ec2'],
+                        useRealScanning: true
+                    })
+                });
+                
+                const data = await response.json();
+                displayScanResultsInChat(data, 'EC2 Compliance Scan Results');
+                
+            } catch (error) {
+                addMessageToChat(`❌ EC2 Scan Failed: ${error.message}`, 'bot');
+            }
+        }
+
         async function performFullScanForChat() {
             try {
                 const response = await fetch(`${API_BASE}/scan`, {
@@ -741,13 +764,19 @@
                     await performS3ScanForChat();
                 }, 1000);
                 return `🔍 **Starting S3 Compliance Scan**\n\nAnalyzing your S3 buckets for:\n• 🔒 Encryption compliance\n• 🚫 Public access controls\n• 📋 Versioning policies\n• 🔐 Access logging\n• 📊 Cost optimization\n\nScanning in progress...`;
-            } else if (message.includes('scan') && message.includes('iam') && (message.includes('permission') || message.includes('role') || message.includes('user'))) {
+            } else if (message.includes('scan') && message.includes('iam')) {
                 // Trigger IAM-only scan when user specifically asks for IAM scan
                 setTimeout(async () => {
                     await performIAMScanForChat();
                 }, 1000);
                 return `🔍 **Starting IAM Compliance Scan**\n\nAnalyzing your IAM setup for:\n• 👤 User management\n• 🔑 Role permissions\n• 📋 Policy analysis\n• 🔍 Access patterns\n\nScanning in progress...`;
-            } else if (message.includes('start') && (message.includes('scan') || message.includes('compliance')) && !message.includes('s3') && !message.includes('iam')) {
+            } else if (message.includes('scan') && message.includes('ec2')) {
+                // Trigger EC2-only scan when user specifically asks for EC2 scan
+                setTimeout(async () => {
+                    await performEC2ScanForChat();
+                }, 1000);
+                return `🔍 **Starting EC2 Compliance Scan**\n\nAnalyzing your EC2 instances for:\n• 🛡️ Security group configurations\n• 🔐 Instance compliance\n• 🌐 Network access patterns\n• 📊 Resource utilization\n\nScanning in progress...`;
+            } else if (message.includes('start') && (message.includes('scan') || message.includes('compliance')) && !message.includes('s3') && !message.includes('iam') && !message.includes('ec2')) {
                 // Trigger full scan when user says "start compliance scan" (not service-specific)
                 setTimeout(async () => {
                     await performFullScanForChat();

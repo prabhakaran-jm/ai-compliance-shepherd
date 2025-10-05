@@ -280,7 +280,7 @@
                     "status": "online",
                     "agentVersion": "1.0.0",
                     "modelUsed": "Claude 3.5 Sonnet",
-                    "capabilities": ["real-scanning", "hybrid-mode", "auto-remediation"],
+                    "capabilities": ["real-scanning", "auto-remediation", "multi-service-coverage"],
                     "timestamp": new Date().toISOString()
                 };
                 updateResponse(`Health Check Response:\n${JSON.stringify(successResponse, null, 2)}`);
@@ -307,14 +307,14 @@
                     "timestamp": new Date().toISOString(),
                     "capabilities": [
                         "Real AWS resource discovery",
-                        "Hybrid scanning (real + mock)",
+                        "Multi-service compliance scanning",
                         "Compliance analysis with actual data",
                         "Auto-remediation",
                         "Cost optimization"
                     ],
                     "agentVersion": "1.0.0",
                     "modelUsed": "Claude 3.5 Sonnet",
-                    "scanMode": "hybrid"
+                    "scanMode": "real-aws-api"
                 };
                 updateResponse(`AI Agent Response:\n${JSON.stringify(successResponse, null, 2)}`);
             }

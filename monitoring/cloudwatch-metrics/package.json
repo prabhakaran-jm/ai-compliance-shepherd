@@ -17,7 +17,7 @@
     "package": "npm run build && zip -r cloudwatch-metrics.zip dist/ node_modules/ package.json"
   },
   "dependencies": {
-    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@ai-compliance-shepherd/shared": "workspace:*",
     "@aws-sdk/client-cloudwatch": "^3.450.0",
     "@aws-sdk/client-logs": "^3.450.0",
     "@aws-sdk/client-lambda": "^3.450.0",

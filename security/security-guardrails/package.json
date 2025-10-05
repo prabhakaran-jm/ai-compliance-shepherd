@@ -17,7 +17,7 @@
     "package": "npm run build && zip -r security-guardrails.zip dist/ node_modules/ package.json"
   },
   "dependencies": {
-    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@ai-compliance-shepherd/shared": "workspace:*",
     "@aws-sdk/client-wafv2": "^3.450.0",
     "@aws-sdk/client-cloudwatch": "^3.450.0",
     "@aws-sdk/client-dynamodb": "^3.450.0",

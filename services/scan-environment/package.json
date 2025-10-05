@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-shepherd/scan-environment",
+  "name": "@ai-compliance-shepherd/scan-environment",
   "version": "1.0.0",
   "description": "Lambda function for read-only AWS posture checks",
   "main": "dist/index.js",
@@ -17,9 +17,9 @@
     "package": "npm run build && zip -r scan-environment.zip dist/ node_modules/"
   },
   "dependencies": {
-    "@compliance-shepherd/shared": "workspace:*",
-    "@compliance-shepherd/data-access-layer": "workspace:*",
-    "@compliance-shepherd/compliance-rules-engine": "workspace:*",
+    "@ai-compliance-shepherd/shared": "workspace:*",
+    "@ai-compliance-shepherd/data-access-layer": "workspace:*",
+    "@ai-compliance-shepherd/compliance-rules-engine": "workspace:*",
     "aws-sdk": "^2.1500.0",
     "aws-lambda": "^1.0.7",
     "lodash": "^4.17.21",

@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-shepherd/data-access-layer",
+  "name": "@ai-compliance-shepherd/data-access-layer",
   "version": "1.0.0",
   "description": "DynamoDB data access layer for AI Compliance Shepherd",
   "main": "dist/index.js",
@@ -16,7 +16,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@ai-compliance-shepherd/shared": "workspace:*",
     "aws-sdk": "^2.1500.0",
     "lodash": "^4.17.21",
     "uuid": "^9.0.0"

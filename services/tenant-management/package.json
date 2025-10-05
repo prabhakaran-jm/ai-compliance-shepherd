@@ -13,8 +13,8 @@
     "deploy": "node scripts/deploy-tenant-infrastructure.js"
   },
   "dependencies": {
-    "@ai-compliance-shepherd/shared-types": "file:../../shared",
-    "@ai-compliance-shepherd/data-access-layer": "file:../data-access-layer",
+    "@ai-compliance-shepherd/shared": "workspace:*",
+    "@ai-compliance-shepherd/data-access-layer": "workspace:*",
     "@aws-sdk/client-dynamodb": "^3.450.0",
     "@aws-sdk/client-s3": "^3.450.0",
     "@aws-sdk/client-kms": "^3.450.0",

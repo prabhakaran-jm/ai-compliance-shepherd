@@ -18,7 +18,7 @@
     "cleanup": "node setup/cleanup.js"
   },
   "dependencies": {
-    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@ai-compliance-shepherd/shared": "workspace:*",
     "@aws-sdk/client-cloudwatch": "^3.450.0",
     "@aws-sdk/client-dynamodb": "^3.450.0",
     "@aws-sdk/client-eventbridge": "^3.450.0",

@@ -551,7 +551,7 @@ def handler(event, context):
         return {
             "statusCode": 200,
             "headers": {
-                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Origin": "https://demo.cloudaimldevops.com",
                 "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
                 "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
             },
@@ -570,7 +570,7 @@ def handler(event, context):
         return {
             "statusCode": 200,
             "headers": {
-                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Origin": "https://demo.cloudaimldevops.com",
                 "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
                 "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
             },
@@ -694,7 +694,7 @@ def handler(event, context):
         return {
             "statusCode": 200,
             "headers": {
-                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Origin": "https://demo.cloudaimldevops.com",
                 "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
                 "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
             },
@@ -1432,115 +1432,112 @@ def generate_ai_insights(findings, services):
       endpointConfiguration: {
         types: [cdk.aws_apigateway.EndpointType.REGIONAL]
       },
-      deploy: false
+      deploy: false,
+      defaultMethodOptions: {
+        authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      }
     });
 
-    // Lambda integration with CORS headers
-    const lambdaIntegration = new cdk.aws_apigateway.LambdaIntegration(complianceScannerLambda, {
-      proxy: true,
+    // Simple Lambda proxy integration - CORS handled by Lambda responses
+    const lambdaIntegration = new cdk.aws_apigateway.LambdaIntegration(complianceScannerLambda);
+
+    // Create resources and methods
+    const scanRes = api.root.addResource('scan');
+    const healthRes = api.root.addResource('health');
+    const agentRes = api.root.addResource('agent');
+    const remediateRes = api.root.addResource('remediate');
+
+    // Create explicit OPTIONS methods with HTTP 200 status code
+    const corsIntegration = new cdk.aws_apigateway.MockIntegration({
       integrationResponses: [{
-        statusCode: '200',
+        statusCode: '200', // Explicitly set to 200
         responseParameters: {
           'method.response.header.Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
           'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-          'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'"
-        }
-      }]
-    });
-
-    // Mock integration for OPTIONS requests to handle preflight
-    const corsIntegration = new cdk.aws_apigateway.MockIntegration({
-      integrationResponses: [{
-        statusCode: '200',
-        responseParameters: {
-          'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-          'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
-          'method.response.header.Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'"
+          'method.response.header.Access-Control-Allow-Methods': "'POST,GET,OPTIONS'",
+          'method.response.header.Access-Control-Max-Age': "'86400'"
         }
       }],
-      passthroughBehavior: cdk.aws_apigateway.PassthroughBehavior.NEVER,
       requestTemplates: {
         'application/json': '{"statusCode": 200}'
       }
     });
 
-    // Capture resources and methods so we can depend on them
-    const scanRes   = api.root.addResource('scan');
-    const healthRes = api.root.addResource('health');
-    const agentRes  = api.root.addResource('agent');
-    const remediateRes = api.root.addResource('remediate');
-
-    // Method response template with CORS headers
-    const methodResponseParameters = {
-      'method.response.header.Access-Control-Allow-Origin': false,
-      'method.response.header.Access-Control-Allow-Headers': false,
-      'method.response.header.Access-Control-Allow-Methods': false
-    };
-
-    const scanPost   = scanRes.addMethod('POST', lambdaIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-      methodResponses: [{
-        statusCode: '200',
-        responseParameters: methodResponseParameters
-      }]
-    });
-    const healthGet  = healthRes.addMethod('GET', lambdaIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-      methodResponses: [{
-        statusCode: '200',
-        responseParameters: methodResponseParameters
-      }]
-    });
-    const agentPost  = agentRes.addMethod('POST', lambdaIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-      methodResponses: [{
-        statusCode: '200',
-        responseParameters: methodResponseParameters
-      }]
-    });
-    const remediatePost = remediateRes.addMethod('POST', lambdaIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-      methodResponses: [{
-        statusCode: '200',
-        responseParameters: methodResponseParameters
-      }]
-    });
-
-    // Add explicit OPTIONS methods for proper CORS preflight handling
-    const corsOptionsResponse = {
-      statusCode: '200',
-      responseParameters: {
-        'method.response.header.Access-Control-Allow-Headers': false,
-        'method.response.header.Access-Control-Allow-Methods': false,
-        'method.response.header.Access-Control-Allow-Origin': false
-      }
-    };
-
+    // Add OPTIONS methods with HTTP 200 status
     scanRes.addMethod('OPTIONS', corsIntegration, {
       authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-      methodResponses: [corsOptionsResponse]
-    });
-    healthRes.addMethod('OPTIONS', corsIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-      methodResponses: [corsOptionsResponse]
-    });
-    agentRes.addMethod('OPTIONS', corsIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-      methodResponses: [corsOptionsResponse]
-    });
-    remediateRes.addMethod('OPTIONS', corsIntegration, {
-      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
-      methodResponses: [corsOptionsResponse]
+      methodResponses: [{
+        statusCode: '200', // HTTP 200 instead of 204
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Origin': true,
+          'method.response.header.Access-Control-Allow-Headers': true,
+          'method.response.header.Access-Control-Allow-Methods': true,
+          'method.response.header.Access-Control-Max-Age': true
+        }
+      }]
     });
 
-    // CORS is now handled by explicit OPTIONS methods above
+    healthRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [{
+        statusCode: '200',
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Origin': true,
+          'method.response.header.Access-Control-Allow-Headers': true,
+          'method.response.header.Access-Control-Allow-Methods': true,
+          'method.response.header.Access-Control-Max-Age': true
+        }
+      }]
+    });
+
+    agentRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [{
+        statusCode: '200',
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Origin': true,
+          'method.response.header.Access-Control-Allow-Headers': true,
+          'method.response.header.Access-Control-Allow-Methods': true,
+          'method.response.header.Access-Control-Max-Age': true
+        }
+      }]
+    });
+
+    remediateRes.addMethod('OPTIONS', corsIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE,
+      methodResponses: [{
+        statusCode: '200',
+        responseParameters: {
+          'method.response.header.Access-Control-Allow-Origin': true,
+          'method.response.header.Access-Control-Allow-Headers': true,
+          'method.response.header.Access-Control-Allow-Methods': true,
+          'method.response.header.Access-Control-Max-Age': true
+        }
+      }]
+    });
+
+    // Add methods - CORS handled by explicit OPTIONS methods above
+    const scanPost = scanRes.addMethod('POST', lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+    const healthGet = healthRes.addMethod('GET', lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+    const agentPost = agentRes.addMethod('POST', lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+    const remediatePost = remediateRes.addMethod('POST', lambdaIntegration, {
+      authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
+    });
+
+    // CORS is now handled by defaultCorsPreflightOptions above
 
 
 
     // Explicit deployment and stage with dependencies on main methods only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v16-fixed-method-responses'
+      description: 'v25-explicit-options-200-status'
     });
     deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);
 
@@ -1554,16 +1551,18 @@ def generate_ai_insights(findings, services):
       stageName: 'prod',
       accessLogDestination: new cdk.aws_apigateway.LogGroupLogDestination(apiLogGroup),
       accessLogFormat: cdk.aws_apigateway.AccessLogFormat.jsonWithStandardFields({
-        caller: false, 
-        httpMethod: true, 
-        ip: true, 
-        protocol: true, 
+        caller: false,
+        httpMethod: true,
+        ip: true,
+        protocol: true,
         requestTime: true,
-        resourcePath: true, 
-        responseLength: true, 
-        status: true, 
+        resourcePath: true,
+        responseLength: true,
+        status: true,
         user: false
-      })
+      }),
+      cacheClusterEnabled: false,
+      cachingEnabled: false
     });
 
     // Throttle defaults to protect Lambda
@@ -1573,8 +1572,7 @@ def generate_ai_insights(findings, services):
     plan.addApiStage({ stage });
 
     // Gateway responses for proper CORS on errors
-    new cdk.aws_apigateway.GatewayResponse(this, 'Default4xx', {
-      restApi: api,
+    api.addGatewayResponse('Default4xx', {
       type: cdk.aws_apigateway.ResponseType.DEFAULT_4XX,
       responseHeaders: {
         'Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
@@ -1583,19 +1581,8 @@ def generate_ai_insights(findings, services):
       }
     });
 
-    new cdk.aws_apigateway.GatewayResponse(this, 'Default5xx', {
-      restApi: api,
+    api.addGatewayResponse('Default5xx', {
       type: cdk.aws_apigateway.ResponseType.DEFAULT_5XX,
-      responseHeaders: {
-        'Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
-        'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",
-        'Access-Control-Allow-Methods': "'GET,POST,OPTIONS'"
-      }
-    });
-
-    new cdk.aws_apigateway.GatewayResponse(this, 'Unauthorized401', {
-      restApi: api,
-      type: cdk.aws_apigateway.ResponseType.UNAUTHORIZED,
       responseHeaders: {
         'Access-Control-Allow-Origin': "'https://demo.cloudaimldevops.com'",
         'Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'",

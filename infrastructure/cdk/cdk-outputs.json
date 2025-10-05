@@ -1,0 +1,13 @@
+{
+  "AiComplianceAgentStack": {
+    "AgentUrl": "https://5v2tvgyom0.execute-api.us-east-1.amazonaws.com/prod/agent",
+    "FindingsTableName": "ai-compliance-agent-findings",
+    "HealthUrl": "https://5v2tvgyom0.execute-api.us-east-1.amazonaws.com/prod/health",
+    "RealScannerLambdaArn": "arn:aws:lambda:us-east-1:556274720247:function:AiComplianceAgentStack-RealResourceScannerLambdaC9-tyQTvDofaLqx",
+    "AgentApiBaseUrl": "https://5v2tvgyom0.execute-api.us-east-1.amazonaws.com/prod/",
+    "AgentLambdaArn": "arn:aws:lambda:us-east-1:556274720247:function:AiComplianceAgentStack-ComplianceScannerLambda9AFC-RTpmryIB1QB1",
+    "ScanUrl": "https://5v2tvgyom0.execute-api.us-east-1.amazonaws.com/prod/scan",
+    "RemediationWorkflowArn": "arn:aws:states:us-east-1:556274720247:stateMachine:RemediationWorkflow",
+    "RemediateUrl": "https://5v2tvgyom0.execute-api.us-east-1.amazonaws.com/prod/remediate"
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-shepherd/findings-storage",
+  "name": "@ai-compliance-shepherd/findings-storage",
   "version": "1.0.0",
   "description": "Lambda function for findings persistence and retrieval with DynamoDB",
   "main": "dist/index.js",
@@ -17,8 +17,8 @@
     "package": "npm run build && zip -r findings-storage.zip dist/ node_modules/"
   },
   "dependencies": {
-    "@compliance-shepherd/shared": "workspace:*",
-    "@compliance-shepherd/data-access-layer": "workspace:*",
+    "@ai-compliance-shepherd/shared": "workspace:*",
+    "@ai-compliance-shepherd/data-access-layer": "workspace:*",
     "aws-sdk": "^2.1500.0",
     "aws-lambda": "^1.0.7",
     "lodash": "^4.17.21",

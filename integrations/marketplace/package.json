@@ -11,7 +11,7 @@
     "package": "npm run build && npm pack"
   },
   "dependencies": {
-    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@ai-compliance-shepherd/shared": "workspace:*",
     "aws-sdk": "^2.1490.0",
     "aws-lambda": "^1.0.7",
     "uuid": "^9.0.1",

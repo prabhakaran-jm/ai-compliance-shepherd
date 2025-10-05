@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-shepherd/shared",
+  "name": "@ai-compliance-shepherd/shared",
   "version": "1.0.0",
   "description": "Shared types and utilities for AI Compliance Shepherd",
   "main": "dist/index.js",

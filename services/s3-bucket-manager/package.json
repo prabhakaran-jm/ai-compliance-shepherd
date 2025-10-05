@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-shepherd/s3-bucket-manager",
+  "name": "@ai-compliance-shepherd/s3-bucket-manager",
   "version": "1.0.0",
   "description": "S3 bucket management service for reports and artifacts with proper permissions",
   "main": "dist/index.js",
@@ -17,7 +17,7 @@
     "package": "npm run build && zip -r s3-bucket-manager.zip dist/ node_modules/"
   },
   "dependencies": {
-    "@compliance-shepherd/shared": "workspace:*",
+    "@ai-compliance-shepherd/shared": "workspace:*",
     "aws-sdk": "^2.1500.0",
     "aws-lambda": "^1.0.7",
     "lodash": "^4.17.21",

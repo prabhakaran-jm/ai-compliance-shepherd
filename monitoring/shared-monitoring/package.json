@@ -16,7 +16,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@ai-compliance-shepherd/shared-types": "file:../../shared",
+    "@ai-compliance-shepherd/shared": "workspace:*",
     "@aws-sdk/client-cloudwatch": "^3.450.0",
     "@aws-sdk/client-xray": "^3.450.0",
     "aws-xray-sdk-core": "^3.5.1",

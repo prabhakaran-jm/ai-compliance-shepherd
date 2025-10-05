@@ -12,8 +12,8 @@
     "deploy": "node scripts/deploy-workflows.js"
   },
   "dependencies": {
-    "@ai-compliance-shepherd/shared-types": "file:../../shared",
-    "@ai-compliance-shepherd/data-access-layer": "file:../data-access-layer",
+    "@ai-compliance-shepherd/shared": "workspace:*",
+    "@ai-compliance-shepherd/data-access-layer": "workspace:*",
     "@aws-sdk/client-sfn": "^3.450.0",
     "@aws-sdk/client-lambda": "^3.450.0",
     "@aws-sdk/client-sns": "^3.450.0",

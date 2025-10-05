@@ -1,5 +1,5 @@
 {
-  "name": "@compliance-shepherd/services",
+  "name": "@ai-compliance-shepherd/services",
   "version": "1.0.0",
   "description": "Lambda services for AI Compliance Shepherd",
   "private": true,
@@ -7,7 +7,7 @@
     "scan-environment",
     "analyze-terraform-plan",
     "apply-fix",
-    "generate-audit-pack",
+    "audit-pack-generator",
     "api-gateway"
   ],
   "scripts": {

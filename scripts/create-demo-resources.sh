@@ -40,24 +40,84 @@ check_aws_credentials() {
 create_non_compliant_s3_bucket() {
     local bucket_name="ai-compliance-demo-noncompliant-$TIMESTAMP"
     
-    echo "🪣 Creating non-compliant S3 bucket: $bucket_name"
+    echo "🪣 Creating truly non-compliant S3 bucket: $bucket_name"
     
-    # Create bucket
+    # 1. Create bucket
     aws s3 mb "s3://$bucket_name" --profile "$AWS_PROFILE" --region "$REGION"
     
-    # Remove public access block (non-compliant)
-    aws s3api delete-public-access-block --bucket "$bucket_name" --profile "$AWS_PROFILE"
-    
-    # Disable server-side encryption (non-compliant)
-    aws s3api delete-bucket-encryption --bucket "$bucket_name" --profile "$AWS_PROFILE" 2>/dev/null || true
-    
-    # Add test data
+    # 2. Explicitly disable public access block
+    echo "   - Disabling public access block..."
+    aws s3api put-public-access-block \
+        --bucket "$bucket_name" \
+        --profile "$AWS_PROFILE" \
+        --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false"
+
+    # 2.5. Explicitly disable encryption (AWS may enable it by default)
+    echo "   - Disabling server-side encryption..."
+    # Try multiple times as AWS might re-enable it
+    for i in {1..3}; do
+        aws s3api delete-bucket-encryption --bucket "$bucket_name" --profile "$AWS_PROFILE" 2>/dev/null || true
+        sleep 2
+    done
+
+    # 3. Create and apply a public read policy
+    echo "   - Applying public read bucket policy..."
+    local policy_json="{
+        \"Version\": \"2012-10-17\",
+        \"Statement\": [
+            {
+                \"Sid\": \"PublicReadGetObject\",
+                \"Effect\": \"Allow\",
+                \"Principal\": \"*\",
+                \"Action\": \"s3:GetObject\",
+                \"Resource\": \"arn:aws:s3:::$bucket_name/*\"
+            }
+        ]
+    }"
+    echo "$policy_json" > bucket-policy.json
+    aws s3api put-bucket-policy --bucket "$bucket_name" --policy file://bucket-policy.json --profile "$AWS_PROFILE"
+    rm bucket-policy.json
+
+    # 4. Add test data
     echo "This is test data for compliance scanning demo" | aws s3 cp - "s3://$bucket_name/test-data.txt" --profile "$AWS_PROFILE"
     
-    echo "✅ Created non-compliant S3 bucket: $bucket_name"
-    echo "   - No encryption"
-    echo "   - No public access block"
-    echo "   - Contains test data"
+    # 5. Verify non-compliance
+    echo "   - Verifying non-compliant status..."
+
+    # Verify public access block is off
+    if aws s3api get-public-access-block --bucket "$bucket_name" --profile "$AWS_PROFILE" 2>/dev/null; then
+        echo "     DEBUG: Public access block settings:"
+        aws s3api get-public-access-block --bucket "$bucket_name" --profile "$AWS_PROFILE" --query 'PublicAccessBlockConfiguration' --output table
+        
+        # Check if ALL four settings are false (not blocked)
+        local block_public_acls=$(aws s3api get-public-access-block --bucket "$bucket_name" --profile "$AWS_PROFILE" --query 'PublicAccessBlockConfiguration.BlockPublicAcls' --output text)
+        local ignore_public_acls=$(aws s3api get-public-access-block --bucket "$bucket_name" --profile "$AWS_PROFILE" --query 'PublicAccessBlockConfiguration.IgnorePublicAcls' --output text)
+        local block_public_policy=$(aws s3api get-public-access-block --bucket "$bucket_name" --profile "$AWS_PROFILE" --query 'PublicAccessBlockConfiguration.BlockPublicPolicy' --output text)
+        local restrict_public_buckets=$(aws s3api get-public-access-block --bucket "$bucket_name" --profile "$AWS_PROFILE" --query 'PublicAccessBlockConfiguration.RestrictPublicBuckets' --output text)
+        
+        if [[ "$block_public_acls" == "False" && "$ignore_public_acls" == "False" && "$block_public_policy" == "False" && "$restrict_public_buckets" == "False" ]]; then
+            echo "     ✅ VERIFIED: Public access is not blocked (all settings disabled)."
+        else
+            echo "     ❌ FAILED VERIFICATION: Public access is still blocked (some settings enabled)."
+        fi
+    else
+        # If the command fails with NoSuchPublicAccessBlockConfiguration, it's also considered not blocked.
+        echo "     ✅ VERIFIED: Public access block is not configured (not blocked)."
+    fi
+
+    # Verify encryption is off
+    if aws s3api get-bucket-encryption --bucket "$bucket_name" --profile "$AWS_PROFILE" 2>/dev/null; then
+        echo "     DEBUG: Encryption configuration found:"
+        aws s3api get-bucket-encryption --bucket "$bucket_name" --profile "$AWS_PROFILE" --query 'ServerSideEncryptionConfiguration' --output table
+        echo "     ❌ FAILED VERIFICATION: Bucket IS encrypted (encryption config found)."
+    else
+        echo "     ✅ VERIFIED: Bucket is NOT encrypted (no encryption config found)."
+    fi
+
+    echo "✅ Created S3 bucket: $bucket_name"
+    echo "   - Public access: Not blocked (non-compliant)"
+    echo "   - Encryption: Check verification above"
+    echo "   - Publicly readable via bucket policy"
     echo ""
 }
 
@@ -165,11 +225,18 @@ create_non_compliant_ec2_instance() {
         --query 'SecurityGroups[0].GroupId' \
         --output text)
     
-    # Launch instance without security groups (non-compliant)
+    # Create or use existing key pair
+    local key_name="ai-compliance-demo-key-$TIMESTAMP"
+    echo "   - Creating key pair: $key_name"
+    
+    # Create key pair (this will fail if it already exists, which is fine)
+    aws ec2 create-key-pair --key-name "$key_name" --profile "$AWS_PROFILE" --region "$REGION" --query 'KeyMaterial' --output text > "${key_name}.pem" 2>/dev/null || true
+    
+    # Launch instance with the key pair
     local instance_id=$(aws ec2 run-instances \
         --image-id ami-0c02fb55956c7d316 \
         --instance-type t2.micro \
-        --key-name default \
+        --key-name "$key_name" \
         --security-group-ids "$sg_id" \
         --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$instance_name}]" \
         --profile "$AWS_PROFILE" \

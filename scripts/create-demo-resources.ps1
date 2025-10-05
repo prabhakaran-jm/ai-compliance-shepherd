@@ -48,29 +48,98 @@ function Test-AWSCredentials {
 function New-NonCompliantS3Bucket {
     $bucketName = "ai-compliance-demo-noncompliant-$Timestamp"
     
-    Write-Host "🪣 Creating non-compliant S3 bucket: $bucketName" -ForegroundColor Cyan
+    Write-Host "🪣 Creating truly non-compliant S3 bucket: $bucketName" -ForegroundColor Cyan
     
-    # Create bucket
+    # 1. Create bucket
     aws s3 mb "s3://$bucketName" --profile $AWSProfile --region $Region
     
-    # Remove public access block (non-compliant)
-    aws s3api delete-public-access-block --bucket $bucketName --profile $AWSProfile
-    
-    # Disable server-side encryption (non-compliant)
-    try {
-        aws s3api delete-bucket-encryption --bucket $bucketName --profile $AWSProfile
+    # 2. Explicitly disable public access block (necessary in most modern AWS accounts)
+    Write-Host "   - Disabling public access block..."
+    aws s3api put-public-access-block --bucket $bucketName --profile $AWSProfile --public-access-block-configuration "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false"
+
+    # 2.5. Explicitly disable encryption (AWS may enable it by default)
+    Write-Host "   - Disabling server-side encryption..."
+    # Try multiple times as AWS might re-enable it
+    for ($i = 1; $i -le 3; $i++) {
+        try {
+            aws s3api delete-bucket-encryption --bucket $bucketName --profile $AWSProfile
+        }
+        catch {
+            # Ignore if encryption is already disabled
+        }
+        Start-Sleep -Seconds 2
     }
-    catch {
-        # Ignore if encryption is already disabled
-    }
-    
-    # Add test data
+
+    # 3. Create and apply a public read policy
+    Write-Host "   - Applying public read bucket policy..."
+    $policy = "{
+        `"Version`": `"2012-10-17`",
+        `"Statement`": [
+            {
+                `"Sid`": `"PublicReadGetObject`",
+                `"Effect`": `"Allow`",
+                `"Principal`": `"*`",
+                `"Action`": `"s3:GetObject`",
+                `"Resource`": `"arn:aws:s3:::$bucketName/*`"
+            }
+        ]
+    }"
+    $policy | Out-File -FilePath "bucket-policy.json" -Encoding UTF8
+    aws s3api put-bucket-policy --bucket $bucketName --policy file://bucket-policy.json --profile $AWSProfile
+    Remove-Item "bucket-policy.json" -Force
+
+    # 4. Add test data
     "This is test data for compliance scanning demo" | aws s3 cp - "s3://$bucketName/test-data.txt" --profile $AWSProfile
     
-    Write-Host "✅ Created non-compliant S3 bucket: $bucketName" -ForegroundColor Green
-    Write-Host "   - No encryption" -ForegroundColor Yellow
-    Write-Host "   - No public access block" -ForegroundColor Yellow
-    Write-Host "   - Contains test data" -ForegroundColor Yellow
+    # 5. Verify non-compliance
+    Write-Host "   - Verifying non-compliant status..."
+    
+    # Verify public access block is off
+    try {
+        $pab = aws s3api get-public-access-block --bucket $bucketName --profile $AWSProfile | ConvertFrom-Json
+        $config = $pab.PublicAccessBlockConfiguration
+        Write-Host "     DEBUG: Public access block settings:" -ForegroundColor Gray
+        Write-Host "       BlockPublicAcls: $($config.BlockPublicAcls)" -ForegroundColor Gray
+        Write-Host "       IgnorePublicAcls: $($config.IgnorePublicAcls)" -ForegroundColor Gray
+        Write-Host "       BlockPublicPolicy: $($config.BlockPublicPolicy)" -ForegroundColor Gray
+        Write-Host "       RestrictPublicBuckets: $($config.RestrictPublicBuckets)" -ForegroundColor Gray
+        
+        # Check if ALL four settings are false (not blocked)
+        if ($config.BlockPublicAcls -eq $false -and 
+            $config.IgnorePublicAcls -eq $false -and 
+            $config.BlockPublicPolicy -eq $false -and 
+            $config.RestrictPublicBuckets -eq $false) {
+            Write-Host "     ✅ VERIFIED: Public access is not blocked (all settings disabled)." -ForegroundColor Green
+        } else {
+            Write-Host "     ❌ FAILED VERIFICATION: Public access is still blocked (some settings enabled)." -ForegroundColor Red
+        }
+    } catch {
+        # If the command fails with NoSuchPublicAccessBlockConfiguration, it's also considered not blocked.
+        if ($_.Exception.Message -like "*NoSuchPublicAccessBlockConfiguration*") {
+            Write-Host "     ✅ VERIFIED: Public access block is not configured (not blocked)." -ForegroundColor Green
+        } else {
+            Write-Host "     ❌ FAILED VERIFICATION: Could not get public access block status. Error: $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+
+    # Verify encryption is off
+    try {
+        $encryption = aws s3api get-bucket-encryption --bucket $bucketName --profile $AWSProfile 2>&1
+        Write-Host "     DEBUG: Encryption configuration found:" -ForegroundColor Gray
+        Write-Host "       $encryption" -ForegroundColor Gray
+        Write-Host "     ❌ FAILED VERIFICATION: Bucket IS encrypted (encryption config found)." -ForegroundColor Red
+    } catch {
+        if ($_.Exception.Message -like "*ServerSideEncryptionConfigurationNotFoundError*") {
+            Write-Host "     ✅ VERIFIED: Bucket is NOT encrypted (no encryption config found)." -ForegroundColor Green
+        } else {
+            Write-Host "     ❌ FAILED VERIFICATION: Could not get encryption status. Error: $($_.Exception.Message)" -ForegroundColor Red
+        }
+    }
+
+    Write-Host "✅ Created S3 bucket: $bucketName" -ForegroundColor Green
+    Write-Host "   - Public access: Not blocked (non-compliant)" -ForegroundColor Yellow
+    Write-Host "   - Encryption: Check verification above" -ForegroundColor Yellow
+    Write-Host "   - Publicly readable via bucket policy" -ForegroundColor Yellow
     Write-Host ""
 }
 

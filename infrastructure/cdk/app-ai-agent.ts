@@ -143,9 +143,10 @@ def publish_custom_metrics(findings: List[Dict[str, Any]], services: List[str]):
                 Namespace='AIComplianceShepherd',
                 MetricData=metrics
             )
+            print(f"Published {len(metrics)} custom metrics to CloudWatch")
         
     except Exception as e:
-        pass  # Silently handle metric publishing errors
+        print(f"Error publishing custom metrics: {str(e)}")
 
 def handler(event, context):
     """
@@ -153,6 +154,7 @@ def handler(event, context):
     Performs actual AWS resource discovery and compliance analysis
     """
     
+    print(f"Real scanner received event: {json.dumps(event)}")
     
     try:
         # Extract scan parameters
@@ -196,7 +198,7 @@ def handler(event, context):
         }
         
     except Exception as e:
-        pass  # Silently handle scanner errors
+        print(f"Error in real scanner: {str(e)}")
         return {
             "statusCode": 500,
             "body": json.dumps({
@@ -207,54 +209,64 @@ def handler(event, context):
         }
 
 def scan_s3_resources(regions: List[str]) -> List[Dict[str, Any]]:
-    """Real S3 bucket scanning with CDK assets exclusion"""
+    """Real S3 bucket scanning with detailed logging and CDK assets exclusion"""
     findings = []
+    print("Starting S3 resource scan.")
     
-    # Resources to exclude from scanning (CDK managed, not security-critical)
     excluded_patterns = [
-        'cdk-',  # CDK assets buckets
-        'cdkassets',  # CDK assets
-        'aws-cdk-',  # AWS CDK buckets
-        'cloudformation-',  # CloudFormation buckets
-        'amplify-',  # Amplify buckets
-        'lambda-',  # Lambda deployment buckets
-        'serverless-',  # Serverless framework buckets
+        'cdk-', 'cdkassets', 'aws-cdk-', 'cloudformation-', 
+        'amplify-', 'lambda-', 'serverless-'
     ]
     
     def should_exclude_resource(resource_name: str) -> bool:
-        """Check if resource should be excluded from compliance scanning"""
         resource_lower = resource_name.lower()
         return any(pattern in resource_lower for pattern in excluded_patterns)
     
     try:
         s3_client = boto3.client('s3')
-        
-        # List all buckets
         response = s3_client.list_buckets()
+        print(f"Found {len(response['Buckets'])} buckets to analyze.")
+        
+        # Debug: Log all bucket names
+        all_bucket_names = [bucket['Name'] for bucket in response['Buckets']]
+        print(f"DEBUG: All bucket names found: {all_bucket_names}")
         
         for bucket in response['Buckets']:
             bucket_name = bucket['Name']
+            print(f"Processing bucket: {bucket_name}")
             
-            # Skip CDK assets and other non-security-critical resources
             if should_exclude_resource(bucket_name):
+                print(f"Excluding bucket based on name pattern: {bucket_name}")
                 continue
             
             # Check encryption
-            encryption_enabled = False
             try:
                 s3_client.get_bucket_encryption(Bucket=bucket_name)
-                encryption_enabled = True
+                print(f"Bucket '{bucket_name}': Encryption is enabled.")
             except ClientError as e:
                 if e.response['Error']['Code'] == 'ServerSideEncryptionConfigurationNotFoundError':
-                    encryption_enabled = False
+                    print(f"Bucket '{bucket_name}': No server-side encryption. Generating finding.")
+                    findings.append({
+                        "findingId": f"S3-REAL-{bucket_name.replace('-', '').upper()}",
+                        "severity": "HIGH",
+                        "category": "Data Protection",
+                        "title": f"S3 Bucket '{bucket_name}' Without Encryption",
+                        "description": f"Real scan detected S3 bucket '{bucket_name}' without server-side encryption",
+                        "resource": f"s3://{bucket_name}",
+                        "recommendation": "Enable S3 bucket encryption using AES-256 or KMS",
+                        "autoRemediable": True,
+                        "aiAnalysis": "Real AWS API scan identified unencrypted bucket",
+                        "complianceFrameworks": ["SOC2", "HIPAA", "PCI-DSS"],
+                        "estimatedCost": 5000,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "scanSource": "real-aws-api"
+                    })
                 else:
-                    # Assume compliant if API error occurs to avoid false positives
-                    encryption_enabled = True
+                    print(f"SKIPPING encryption check for bucket '{bucket_name}' due to API error: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
             except Exception as e:
-                encryption_enabled = True # Assume compliant
+                print(f"SKIPPING encryption check for bucket '{bucket_name}' due to unexpected error: {str(e)}")
 
             # Check public access
-            public_access_blocked = False
             try:
                 public_access = s3_client.get_public_access_block(Bucket=bucket_name)
                 config = public_access.get('PublicAccessBlockConfiguration', {})
@@ -262,53 +274,52 @@ def scan_s3_resources(regions: List[str]) -> List[Dict[str, Any]]:
                     'BlockPublicAcls', 'IgnorePublicAcls', 
                     'BlockPublicPolicy', 'RestrictPublicBuckets'
                 ])
+                if not public_access_blocked:
+                    print(f"Bucket '{bucket_name}': Public access is not fully blocked. Generating finding.")
+                    findings.append({
+                        "findingId": f"S3-PUBLIC-{bucket_name.replace('-', '').upper()}",
+                        "severity": "MEDIUM",
+                        "category": "Access Control",
+                        "title": f"S3 Bucket '{bucket_name}' Public Access Not Blocked",
+                        "description": f"Real scan detected S3 bucket '{bucket_name}' without public access block",
+                        "resource": f"s3://{bucket_name}",
+                        "recommendation": "Enable public access block to prevent accidental public exposure",
+                        "autoRemediable": True,
+                        "aiAnalysis": "Real AWS API scan identified potential public access risk",
+                        "complianceFrameworks": ["SOC2", "CIS"],
+                        "estimatedCost": 2000,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "scanSource": "real-aws-api"
+                    })
+                else:
+                    print(f"Bucket '{bucket_name}': Public access block is enabled.")
             except ClientError as e:
                 if e.response['Error']['Code'] == 'NoSuchPublicAccessBlockConfiguration':
-                    public_access_blocked = False
+                    print(f"Bucket '{bucket_name}': No public access block configured. Generating finding.")
+                    findings.append({
+                        "findingId": f"S3-PUBLIC-{bucket_name.replace('-', '').upper()}",
+                        "severity": "MEDIUM",
+                        "category": "Access Control",
+                        "title": f"S3 Bucket '{bucket_name}' Public Access Not Blocked",
+                        "description": f"Real scan detected S3 bucket '{bucket_name}' without public access block",
+                        "resource": f"s3://{bucket_name}",
+                        "recommendation": "Enable public access block to prevent accidental public exposure",
+                        "autoRemediable": True,
+                        "aiAnalysis": "Real AWS API scan identified potential public access risk",
+                        "complianceFrameworks": ["SOC2", "CIS"],
+                        "estimatedCost": 2000,
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "scanSource": "real-aws-api"
+                    })
                 else:
-                    # Assume compliant if API error occurs
-                    public_access_blocked = True
+                    print(f"SKIPPING public access check for bucket '{bucket_name}' due to API error: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
             except Exception as e:
-                public_access_blocked = True # Assume compliant
-            
-            # Generate findings based on real data
-            if not encryption_enabled:
-                findings.append({
-                    "findingId": f"S3-REAL-{bucket_name.replace('-', '').upper()}",
-                    "severity": "HIGH",
-                    "category": "Data Protection",
-                    "title": f"S3 Bucket '{bucket_name}' Without Encryption",
-                    "description": f"Real scan detected S3 bucket '{bucket_name}' without server-side encryption",
-                    "resource": f"s3://{bucket_name}",
-                    "recommendation": "Enable S3 bucket encryption using AES-256 or KMS",
-                    "autoRemediable": True,
-                    "aiAnalysis": "Real AWS API scan identified unencrypted bucket",
-                    "complianceFrameworks": ["SOC2", "HIPAA", "PCI-DSS"],
-                    "estimatedCost": 5000,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "scanSource": "real-aws-api"
-                })
-            
-            if not public_access_blocked:
-                findings.append({
-                    "findingId": f"S3-PUBLIC-{bucket_name.replace('-', '').upper()}",
-                    "severity": "MEDIUM",
-                    "category": "Access Control",
-                    "title": f"S3 Bucket '{bucket_name}' Public Access Not Blocked",
-                    "description": f"Real scan detected S3 bucket '{bucket_name}' without public access block",
-                    "resource": f"s3://{bucket_name}",
-                    "recommendation": "Enable public access block to prevent accidental public exposure",
-                    "autoRemediable": True,
-                    "aiAnalysis": "Real AWS API scan identified potential public access risk",
-                    "complianceFrameworks": ["SOC2", "CIS"],
-                    "estimatedCost": 2000,
-                    "timestamp": datetime.utcnow().isoformat(),
-                    "scanSource": "real-aws-api"
-                })
+                print(f"SKIPPING public access check for bucket '{bucket_name}' due to unexpected error: {str(e)}")
                 
     except Exception as e:
-        pass  # Silently handle S3 scanning errors
+        print(f"FATAL: Could not perform S3 scan due to error: {str(e)}")
     
+    print(f"S3 scan complete. Found {len(findings)} findings.")
     return findings
 
 def scan_iam_resources() -> List[Dict[str, Any]]:
@@ -345,6 +356,7 @@ def scan_iam_resources() -> List[Dict[str, Any]]:
                 
                 # Skip CDK managed and AWS service roles
                 if should_exclude_role(role_name):
+                    print(f"Skipping CDK/AWS managed role: {role_name}")
                     continue
                 
                 try:
@@ -373,10 +385,11 @@ def scan_iam_resources() -> List[Dict[str, Any]]:
                         })
                         
                 except Exception as e:
+                    print(f"Error scanning role {role_name}: {str(e)}")
                     continue
                     
     except Exception as e:
-        pass  # Silently handle IAM scanning errors
+        print(f"Error in IAM scanning: {str(e)}")
     
     return findings
 
@@ -429,6 +442,7 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
                             
                             # Skip CDK managed instances
                             if should_exclude_instance(instance_id, tags):
+                                print(f"Skipping CDK/AWS managed instance: {instance_id}")
                                 continue
                             
                             if state == 'running':
@@ -451,40 +465,42 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
                                         "timestamp": datetime.utcnow().isoformat(),
                                         "scanSource": "real-aws-api"
                                     })
-                                
-                                # Check for overly permissive security groups
-                                for sg in security_groups:
-                                    sg_id = sg['GroupId']
-                                    try:
-                                        sg_details = ec2_client.describe_security_groups(GroupIds=[sg_id])
-                                        for sg_detail in sg_details['SecurityGroups']:
-                                            for rule in sg_detail['IpPermissions']:
-                                                if rule.get('IpRanges'):
-                                                    for ip_range in rule['IpRanges']:
-                                                        if ip_range.get('CidrIp') == '0.0.0.0/0':
-                                                            findings.append({
-                                                                "findingId": f"EC2-SG-{sg_id.replace('-', '').upper()}",
-                                                                "severity": "HIGH",
-                                                                "category": "Security Configuration",
-                                                                "title": f"Security Group '{sg_id}' Allows All Traffic",
-                                                                "description": f"Real scan detected security group '{sg_id}' allowing traffic from 0.0.0.0/0",
-                                                                "resource": sg_id,
-                                                                "recommendation": "Restrict security group rules to specific IP ranges",
-                                                                "autoRemediable": False,
-                                                                "aiAnalysis": "Real AWS API scan identified overly permissive security group",
-                                                                "complianceFrameworks": ["SOC2", "CIS"],
-                                                                "estimatedCost": 1500,
-                                                                "timestamp": datetime.utcnow().isoformat(),
-                                                                "scanSource": "real-aws-api"
-                                                            })
+                                else:
+                                    # Check for overly permissive security groups only if the instance has one
+                                    for sg in security_groups:
+                                        sg_id = sg['GroupId']
+                                        try:
+                                            sg_details = ec2_client.describe_security_groups(GroupIds=[sg_id])
+                                            for sg_detail in sg_details['SecurityGroups']:
+                                                for rule in sg_detail['IpPermissions']:
+                                                    if rule.get('IpRanges'):
+                                                        for ip_range in rule['IpRanges']:
+                                                            if ip_range.get('CidrIp') == '0.0.0.0/0':
+                                                                findings.append({
+                                                                    "findingId": f"EC2-SG-{sg_id.replace('-', '').upper()}",
+                                                                    "severity": "HIGH",
+                                                                    "category": "Security Configuration",
+                                                                    "title": f"Security Group '{sg_id}' Allows All Traffic",
+                                                                    "description": f"Real scan detected security group '{sg_id}' allowing traffic from 0.0.0.0/0",
+                                                                    "resource": sg_id,
+                                                                    "recommendation": "Restrict security group rules to specific IP ranges",
+                                                                    "autoRemediable": False,
+                                                                    "aiAnalysis": "Real AWS API scan identified overly permissive security group",
+                                                                    "complianceFrameworks": ["SOC2", "CIS"],
+                                                                    "estimatedCost": 1500,
+                                                                    "timestamp": datetime.utcnow().isoformat(),
+                                                                    "scanSource": "real-aws-api"
+                                                                })
                                     except Exception as e:
+                                        print(f"Error checking security group {sg_id}: {str(e)}")
                                         continue
                                     
             except Exception as e:
+                print(f"Error scanning region {region}: {str(e)}")
                 continue
                 
     except Exception as e:
-        pass  # Silently handle EC2 scanning errors
+        print(f"Error in EC2 scanning: {str(e)}")
     
     return findings
 `),
@@ -499,8 +515,9 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
       })
     });
 
-    // Grant real scanner permissions for AWS resource access
+    // Grant real scanner permissions for AWS resource access - Fixed permissions issue
     realResourceScannerLambda.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      sid: 'AllowScannerActions',
       effect: cdk.aws_iam.Effect.ALLOW,
       actions: [
         's3:ListAllMyBuckets',
@@ -519,6 +536,7 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
 
     // Grant CloudWatch permissions for custom metrics
     realResourceScannerLambda.addToRolePolicy(new cdk.aws_iam.PolicyStatement({
+      sid: 'AllowCloudWatchMetrics',
       effect: cdk.aws_iam.Effect.ALLOW,
       actions: [
         'cloudwatch:PutMetricData'
@@ -631,16 +649,25 @@ def handler(event, context):
                     Payload=json.dumps(real_scan_event)
                 )
                 
-                real_scan_result = json.loads(response['Payload'].read())
+                response_payload = response['Payload'].read()
+                result_data = json.loads(response_payload)
                 
-                if real_scan_result.get('statusCode') == 200:
-                    real_data = json.loads(real_scan_result['body'])
-                    findings = real_data.get('findings', [])
+                # Check for downstream Lambda errors
+                if 'FunctionError' in response:
+                    print(f"ERROR: RealResourceScannerLambda failed with an unhandled exception: {result_data}")
+                    raise Exception(f"Downstream scanner failed: {result_data.get('errorMessage', 'Unknown error')}")
+                
+                if result_data.get('statusCode') == 200:
+                    real_body = json.loads(result_data['body'])
+                    findings = real_body.get('findings', [])
                     scan_source = "real-aws-api"
+                    print(f"Real scanning successful: {len(findings)} findings")
                 else:
-                    raise Exception("Real scanning failed")
+                    print(f"ERROR: RealResourceScannerLambda returned a non-200 status: {result_data.get('body', '')}")
+                    raise Exception("Real scanning failed with non-200 status")
                     
             except Exception as e:
+                print(f"Real scanning error: {str(e)}")
                 # Return empty findings instead of falling back to mock
                 findings = []
                 scan_source = "real-scanning-failed"
@@ -716,62 +743,21 @@ def handler(event, context):
     
     # Auto-Remediation endpoint - triggers Step Functions Remediation Workflow
     if path == '/remediate' and http_method == 'POST':
-        # Parse request body
         try:
             body = json.loads(event.get('body', '{}'))
-        except:
-            body = {}
-        
-        # Extract remediation parameters
-        finding_ids = body.get('findingIds', [])
-        tenant_id = body.get('tenantId', 'demo-tenant')
-        approval_required = body.get('approvalRequired', False)
-        dry_run = body.get('dryRun', False)
-        started_by = body.get('startedBy', 'ai-compliance-shepherd')
-        
-        
-        # Trigger Step Functions Remediation Workflow
-        remediation_result = trigger_remediation_workflow(
-            finding_ids, tenant_id, approval_required, dry_run, started_by
-        )
-        
-        if remediation_result.get('success', False):
+            findings_to_remediate = body.get('findings', [])
+            tenant_id = body.get('tenantId', 'demo-tenant')
+            dry_run = body.get('dryRun', False)
+            
+            remediation_result = trigger_remediation_workflow(findings_to_remediate, tenant_id, dry_run)
+            
             return {
                 "statusCode": 200,
-                "headers": {
-                    "Access-Control-Allow-Origin": "https://demo.cloudaimldevops.com",
-                    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-                    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-                    "Access-Control-Max-Age": "86400"
-                },
-                "body": json.dumps({
-                    "message": "Remediation workflow triggered",
-                    "findingIds": finding_ids,
-                    "tenantId": tenant_id,
-                    "approvalRequired": approval_required,
-                    "dryRun": dry_run,
-                    "executionArn": remediation_result.get('executionArn', ''),
-                    "executionName": remediation_result.get('executionName', ''),
-                    "status": remediation_result.get('status', 'STARTED'),
-                    "timestamp": datetime.utcnow().isoformat()
-                })
+                "headers": {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://demo.cloudaimldevops.com'},
+                "body": json.dumps(remediation_result)
             }
-        else:
-            return {
-                "statusCode": 500,
-                "headers": {
-                    "Access-Control-Allow-Origin": "https://demo.cloudaimldevops.com",
-                    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-                    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-                    "Access-Control-Max-Age": "86400"
-                },
-                "body": json.dumps({
-                    "error": "Failed to trigger remediation workflow",
-                    "details": remediation_result.get('details', 'Unknown error'),
-                    "findingIds": finding_ids,
-                    "timestamp": datetime.utcnow().isoformat()
-                })
-            }
+        except Exception as e:
+            return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
     
     
     # Remediation action handlers for Step Functions workflow
@@ -852,24 +838,28 @@ def check_approval_status(event):
 def remediate_finding(event):
     """Remediate a specific finding"""
     try:
-        finding_id = event.get('findingId', '')
+        finding = event.get('finding', {})
         tenant_id = event.get('tenantId', 'demo-tenant')
         dry_run = event.get('dryRun', False)
         
+        # Extract finding details from the finding object
+        finding_id = finding.get('findingId', '')
+        resource = finding.get('resource', '')
+        title = finding.get('title', '')
         
-        # Determine remediation type based on finding ID
-        remediation_type = determine_remediation_type(finding_id)
+        # Determine remediation type based on finding content
+        remediation_type = determine_remediation_type(finding)
         
         if remediation_type == 'S3_ENCRYPTION':
-            result = remediate_s3_encryption(finding_id, dry_run)
+            result = remediate_s3_encryption(finding, dry_run)
         elif remediation_type == 'S3_PUBLIC_ACCESS':
-            result = remediate_s3_public_access(finding_id, dry_run)
+            result = remediate_s3_public_access(finding, dry_run)
         elif remediation_type == 'IAM_POLICY_REDUCTION':
-            result = remediate_iam_policy_reduction(finding_id, dry_run)
+            result = remediate_iam_policy_reduction(finding, dry_run)
         elif remediation_type == 'IAM_MFA_ENFORCEMENT':
-            result = remediate_iam_mfa_enforcement(finding_id, dry_run)
+            result = remediate_iam_mfa_enforcement(finding, dry_run)
         elif remediation_type == 'EC2_SECURITY_GROUP':
-            result = remediate_ec2_security_group(finding_id, dry_run)
+            result = remediate_ec2_security_group(finding, dry_run)
         else:
             result = {
                 "findingId": finding_id,
@@ -893,27 +883,35 @@ def remediate_finding(event):
             "error": str(e)
         }
 
-def determine_remediation_type(finding_id):
-    """Determine remediation type based on finding ID"""
-    finding_lower = finding_id.lower()
+def determine_remediation_type(finding):
+    """Determine remediation type based on finding content"""
+    title = finding.get('title', '').lower()
+    resource = finding.get('resource', '').lower()
+    category = finding.get('category', '').lower()
     
-    if 's3' in finding_lower and 'encryption' in finding_lower:
+    # Check for S3-related issues
+    if 's3' in resource and ('encryption' in title or 'encryption' in category):
         return 'S3_ENCRYPTION'
-    elif 's3' in finding_lower and 'public' in finding_lower:
+    elif 's3' in resource and ('public' in title or 'access' in category):
         return 'S3_PUBLIC_ACCESS'
-    elif 'iam' in finding_lower and 'policy' in finding_lower:
+    # Check for IAM-related issues
+    elif 'iam' in resource and ('policy' in title or 'permission' in category):
         return 'IAM_POLICY_REDUCTION'
-    elif 'iam' in finding_lower and 'mfa' in finding_lower:
+    elif 'iam' in resource and ('mfa' in title or 'mfa' in category):
         return 'IAM_MFA_ENFORCEMENT'
-    elif 'ec2' in finding_lower and 'security' in finding_lower:
+    # Check for EC2-related issues
+    elif 'ec2' in resource and ('security' in title or 'security' in category):
         return 'EC2_SECURITY_GROUP'
     else:
         return 'UNKNOWN'
 
-def remediate_s3_encryption(finding_id, dry_run):
+def remediate_s3_encryption(finding, dry_run):
     """Remediate S3 bucket encryption"""
     try:
-        bucket_name = finding_id.replace('S3-REAL-AICOMPLIANCEDEMONONCOMPLIANT', 'ai-compliance-demo-noncompliant-')
+        # Extract bucket name from the resource field (e.g., "s3://my-bucket-name")
+        resource = finding.get('resource', '')
+        bucket_name = resource.replace('s3://', '') if resource.startswith('s3://') else resource
+        
         if dry_run:
             return {
                 "status": "DRY_RUN_COMPLETED",
@@ -945,48 +943,41 @@ def remediate_s3_encryption(finding_id, dry_run):
             "error": f"S3 encryption remediation failed: {str(e)}"
         }
 
-def remediate_s3_public_access(finding_id, dry_run):
+def remediate_s3_public_access(finding, dry_run):
     """Remediate S3 bucket public access"""
     try:
-        bucket_name = finding_id.replace('S3-PUBLIC-AICOMPLIANCEDEMONONCOMPLIANT', 'ai-compliance-demo-noncompliant-')
+        resource_uri = finding.get('resource', '')
+        if not resource_uri.startswith('s3://'):
+            return {"status": "FAILED", "error": f"Invalid S3 resource URI: {resource_uri}"}
+        bucket_name = resource_uri.replace('s3://', '')
+
         if dry_run:
-            return {
-                "status": "DRY_RUN_COMPLETED",
-                "message": f"Would enable public access block for S3 bucket: {bucket_name}"
-            }
-        
+            return {"status": "DRY_RUN", "message": f"Would enable Public Access Block for S3 bucket: {bucket_name}"}
+
         s3_client = boto3.client('s3')
         s3_client.put_public_access_block(
             Bucket=bucket_name,
             PublicAccessBlockConfiguration={
-                'BlockPublicAcls': True,
-                'IgnorePublicAcls': True,
-                'BlockPublicPolicy': True,
-                'RestrictPublicBuckets': True
+                'BlockPublicAcls': True, 'IgnorePublicAcls': True,
+                'BlockPublicPolicy': True, 'RestrictPublicBuckets': True
             }
         )
-        
-        return {
-            "status": "REMEDIATED",
-            "message": f"S3 bucket {bucket_name} public access blocked successfully."
-        }
-        
+        return {"status": "REMEDIATED", "message": f"S3 bucket {bucket_name} public access blocked."}
     except Exception as e:
-        return {
-            "status": "FAILED",
-            "error": f"S3 public access remediation failed: {str(e)}"
-        }
+        return {"status": "FAILED", "error": f"S3 public access remediation failed: {str(e)}"}
 
-def remediate_iam_policy_reduction(finding_id, dry_run):
+def remediate_iam_policy_reduction(finding, dry_run):
     """Remediate IAM policy reduction (least privilege)"""
     try:
+        # Extract role name from the resource field (e.g., "arn:aws:iam::123456789012:role/MyRole")
+        resource = finding.get('resource', '')
+        role_name = resource.split('/')[-1] if '/' in resource else resource
+        
         if dry_run:
             return {
                 "status": "DRY_RUN_COMPLETED",
-                "message": "Would reduce IAM policies to follow least privilege principle"
+                "message": f"Would reduce IAM policies for role: {role_name} to follow least privilege principle"
             }
-        
-        role_name = extract_resource_name(finding_id, 'arn:aws:iam::')
         
         # Simulate IAM policy reduction
         
@@ -1037,16 +1028,18 @@ def remediate_iam_mfa_enforcement(finding_id, dry_run):
             "error": f"IAM MFA enforcement failed: {str(e)}"
         }
 
-def remediate_ec2_security_group(finding_id, dry_run):
+def remediate_ec2_security_group(finding, dry_run):
     """Remediate EC2 security group rules"""
     try:
+        # Extract security group ID from the resource field (e.g., "sg-12345678")
+        resource = finding.get('resource', '')
+        security_group_id = resource if resource.startswith('sg-') else resource
+        
         if dry_run:
             return {
                 "status": "DRY_RUN_COMPLETED",
-                "message": "Would restrict EC2 security group rules"
+                "message": f"Would restrict EC2 security group rules for: {security_group_id}"
             }
-        
-        security_group_id = extract_resource_name(finding_id, 'sg-')
         
         # Simulate EC2 security group remediation
         
@@ -1067,21 +1060,7 @@ def remediate_ec2_security_group(finding_id, dry_run):
             "error": f"EC2 security group remediation failed: {str(e)}"
         }
 
-def extract_resource_name(finding_id, prefix):
-    """Extract resource name from finding ID"""
-    try:
-        # Simplified extraction for demo purposes
-        # In production, this would parse the actual resource ARN/ID
-        if prefix == 's3://':
-            return f"bucket-{finding_id[-8:]}"
-        elif prefix == 'arn:aws:iam::':
-            return f"role-{finding_id[-8:]}"
-        elif prefix == 'sg-':
-            return f"sg-{finding_id[-8:]}"
-        else:
-            return f"resource-{finding_id[-8:]}"
-    except:
-        return f"resource-{finding_id[-8:]}"
+
 
 def validate_remediation_results(event):
     """Validate remediation results"""
@@ -1136,86 +1115,28 @@ def check_execution_status(event):
             })
         }
 
-def trigger_remediation_workflow(finding_ids, tenant_id, approval_required, dry_run, started_by):
-    """Trigger Step Functions Remediation Workflow"""
+def trigger_remediation_workflow(findings, tenant_id, dry_run):
     try:
-        import uuid
+        sfn_client = boto3.client('stepfunctions')
+        state_machine_arn = os.environ.get('REMEDIATION_WORKFLOW_ARN')
         
-        # Get AWS account ID and region
-        sts_client = boto3.client('sts')
-        identity = sts_client.get_caller_identity()
-        account_id = identity['Account']
-        region = os.environ.get('AWS_REGION', 'us-east-1')
-        
-        # Build state machine ARN for remediation workflow
-        state_machine_arn = f"arn:aws:states:{region}:{account_id}:stateMachine:RemediationWorkflow"
-        
-        # Generate execution name
-        execution_name = f"remediation-{int(datetime.utcnow().timestamp())}-{uuid.uuid4().hex[:8]}"
-        
-        # Prepare execution input
         execution_input = {
-            "correlationId": f"remediation-{uuid.uuid4().hex[:8]}",
             "tenantId": tenant_id,
-            "workflowType": "remediation",
             "parameters": {
-                "findingIds": finding_ids,
-                "approvalRequired": approval_required,
+                "findings": findings,
                 "dryRun": dry_run
-            },
-            "metadata": {
-                "startedBy": started_by,
-                "startedAt": datetime.utcnow().isoformat(),
-                "source": "ai-compliance-shepherd-ui"
             }
         }
-        
-        # Start Step Functions execution
-        sfn_client = boto3.client('stepfunctions')
-        
-        # Check if state machine exists
-        try:
-            sfn_client.describe_state_machine(stateMachineArn=state_machine_arn)
-        except sfn_client.exceptions.StateMachineDoesNotExist:
-            return {
-                "success": False,
-                "executionArn": "",
-                "executionName": "",
-                "status": "FAILED",
-                "details": f"Step Functions state machine 'RemediationWorkflow' does not exist"
-            }
-        except Exception as e:
-            return {
-                "success": False,
-                "executionArn": "",
-                "executionName": "",
-                "status": "FAILED",
-                "details": f"Error checking state machine: {str(e)}"
-            }
         
         response = sfn_client.start_execution(
             stateMachineArn=state_machine_arn,
-            name=execution_name,
             input=json.dumps(execution_input)
         )
         
-        return {
-            "success": True,
-            "executionArn": response['executionArn'],
-            "executionName": execution_name,
-            "status": "STARTED",
-            "details": f"Remediation workflow started for {len(finding_ids)} findings"
-        }
-        
+        return {"success": True, "executionArn": response['executionArn']}
     except Exception as e:
-        pass  # Silently handle workflow trigger errors
-        return {
-            "success": False,
-            "executionArn": "",
-            "executionName": "",
-            "status": "FAILED",
-            "details": f"Failed to start remediation workflow: {str(e)}"
-        }
+        print(f"Error triggering remediation workflow: {str(e)}")
+        return {"success": False, "error": str(e)}
 
 def generate_ai_insights(findings, services):
     """Generate AI insights based on real findings"""
@@ -1373,9 +1294,9 @@ def generate_ai_insights(findings, services):
           },
           "ApplyRemediations": {
             "Type": "Map",
-            "ItemsPath": "$.parameters.findingIds",
+            "ItemsPath": "$.parameters.findings",
             "Parameters": {
-              "findingId.$": "$$.Map.Item.Value",
+              "finding.$": "$$.Map.Item.Value",
               "tenantId.$": "$.tenantId",
               "correlationId.$": "$.correlationId",
               "dryRun.$": "$.parameters.dryRun"
@@ -1391,7 +1312,7 @@ def generate_ai_insights(findings, services):
                     "FunctionName": complianceScannerLambda.functionArn,
                     "Payload": {
                       "action": "remediateFinding",
-                      "findingId.$": "$.findingId",
+                      "finding.$": "$.finding",
                       "tenantId.$": "$.tenantId",
                       "correlationId.$": "$.correlationId",
                       "dryRun.$": "$.dryRun"

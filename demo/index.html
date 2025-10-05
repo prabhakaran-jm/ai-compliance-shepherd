@@ -497,14 +497,20 @@
             const isHtml = /<[^>]*>/g.test(message);
             
             if (isHtml) {
-                // For HTML content, use innerHTML
+                // For HTML content, create the structure and insert HTML directly
                 messageDiv.innerHTML = `
                     <div class="message-content">
                         <strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> 
-                        <div class="message-text">${message}</div>
                     </div>
                     <div class="message-time text-muted small">${timeString}</div>
                 `;
+                
+                // Insert the HTML content after the strong tag
+                const messageContent = messageDiv.querySelector('.message-content');
+                const htmlContent = document.createElement('div');
+                htmlContent.className = 'message-text';
+                htmlContent.innerHTML = message;
+                messageContent.appendChild(htmlContent);
             } else {
                 // For plain text, preserve line breaks
                 messageDiv.innerHTML = `

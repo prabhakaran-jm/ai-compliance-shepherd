@@ -654,6 +654,33 @@ def handler(event, context):
         
         complianceScore = max(0, 100 - (criticalFindings * 20) - (totalFindings - criticalFindings) * 10)
         
+        # Generate service-specific recommendations
+        recommended_actions = []
+        if 's3' in services:
+            recommended_actions.extend([
+                "Enable S3 server-side encryption (AES-256 or KMS)",
+                "Configure S3 bucket public access block",
+                "Enable S3 versioning for data protection",
+                "Set up S3 lifecycle policies for cost optimization"
+            ])
+        if 'iam' in services:
+            recommended_actions.extend([
+                "Review IAM policies for least privilege principle",
+                "Enable MFA for all IAM users",
+                "Remove unused IAM roles and policies",
+                "Implement IAM access analyzer"
+            ])
+        if 'ec2' in services:
+            recommended_actions.extend([
+                "Review EC2 security group rules",
+                "Ensure EC2 instances use proper AMIs",
+                "Enable EC2 detailed monitoring",
+                "Configure EC2 instance metadata service v2"
+            ])
+        
+        # Remove duplicates while preserving order
+        recommended_actions = list(dict.fromkeys(recommended_actions))
+        
         # Generate AI insights
         aiInsights = {
             "complianceScore": complianceScore,
@@ -662,11 +689,7 @@ def handler(event, context):
             "autoRemediableFindings": autoRemediable,
             "estimatedAnnualSavings": sum(f.get('estimatedCost', 0) for f in findings),
             "scanSource": scan_source,
-            "recommendedActions": [
-                "Enable S3 encryption for data protection",
-                "Review IAM permissions for least privilege",
-                "Configure EC2 security groups"
-            ],
+            "recommendedActions": recommended_actions,
             "aiReasoning": f"AI agent analyzed AWS resources using {'real AWS API data' if scan_source == 'real-aws-api' else 'compliance frameworks'} and identified security gaps with automated remediation recommendations"
         }
         

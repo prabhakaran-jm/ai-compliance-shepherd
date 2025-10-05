@@ -740,7 +740,8 @@ def handler(event, context):
                 "headers": {
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-                    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+                    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+                    "Access-Control-Max-Age": "86400"
                 },
                 "body": json.dumps({
                     "message": "Remediation workflow triggered",
@@ -760,7 +761,8 @@ def handler(event, context):
                 "headers": {
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
-                    "Access-Control-Allow-Methods": "GET,POST,OPTIONS"
+                    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+                    "Access-Control-Max-Age": "86400"
                 },
                 "body": json.dumps({
                     "error": "Failed to trigger remediation workflow",
@@ -1429,9 +1431,10 @@ def generate_ai_insights(findings, services):
     });
 
     const cors = {
-      allowOrigins: cdk.aws_apigateway.Cors.ALL_ORIGINS,
+      allowOrigins: ['*'],
       allowHeaders: ['Content-Type','X-Amz-Date','Authorization','X-Api-Key','X-Amz-Security-Token'],
-      allowMethods: ['GET','POST','OPTIONS']
+      allowMethods: ['GET','POST','OPTIONS'],
+      allowCredentials: false
     };
 
     // Lambda integration
@@ -1456,7 +1459,7 @@ def generate_ai_insights(findings, services):
     // Explicit deployment and stage with dependencies on methods with integrations only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v1' // bump to v2 when routes change
+      description: 'v2' // bump to v2 when routes change - force redeploy for CORS fix
     });
     // Only depend on methods that have integrations (not OPTIONS methods)
     deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);

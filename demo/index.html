@@ -482,79 +482,6 @@
                 updateResponse(`❌ S3 Scan Failed: ${error.message}\n\nPlease check API connectivity and AWS credentials.`);
             }
         }
-                const s3Response = {
-                    "message": "S3 Compliance Scan Complete",
-                    "scanId": `s3-scan-${new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14)}`,
-                    "timestamp": new Date().toISOString(),
-                    "scanType": "general",
-                    "regions": ["us-east-1"],
-                    "services": ["s3"],
-                    "useRealScanning": true,
-                    "findings": [
-                        {
-                            "findingId": "S3-001",
-                            "severity": "HIGH",
-                            "category": "Data Protection",
-                            "title": "S3 Bucket Without Encryption",
-                            "description": "AI detected S3 bucket without server-side encryption",
-                            "resource": "s3://production-data-bucket",
-                            "recommendation": "Enable S3 bucket encryption using AES-256 or KMS",
-                            "autoRemediable": true,
-                            "aiAnalysis": "Critical security gap - data at rest is unencrypted",
-                            "complianceFrameworks": ["SOC2", "HIPAA", "PCI-DSS"],
-                            "estimatedCost": 5000,
-                            "timestamp": new Date().toISOString()
-                        },
-                        {
-                            "findingId": "S3-002",
-                            "severity": "MEDIUM",
-                            "category": "Access Control",
-                            "title": "S3 Bucket with Public Read Access",
-                            "description": "AI identified S3 bucket with public read permissions",
-                            "resource": "s3://public-assets-bucket",
-                            "recommendation": "Review and restrict public access policies",
-                            "autoRemediable": true,
-                            "aiAnalysis": "Public access may expose sensitive data",
-                            "complianceFrameworks": ["SOC2", "CIS"],
-                            "estimatedCost": 2000,
-                            "timestamp": new Date().toISOString()
-                        },
-                        {
-                            "findingId": "S3-003",
-                            "severity": "LOW",
-                            "category": "Cost Optimization",
-                            "title": "S3 Bucket Without Lifecycle Policy",
-                            "description": "AI detected S3 bucket without lifecycle management",
-                            "resource": "s3://logs-bucket",
-                            "recommendation": "Implement lifecycle policies for cost optimization",
-                            "autoRemediable": true,
-                            "aiAnalysis": "Lifecycle policies can reduce storage costs by 60%",
-                            "complianceFrameworks": ["Cost Optimization"],
-                            "estimatedCost": 1500,
-                            "timestamp": new Date().toISOString()
-                        }
-                    ],
-                    "aiInsights": {
-                        "complianceScore": 65,
-                        "totalFindings": 3,
-                        "criticalFindings": 1,
-                        "autoRemediableFindings": 3,
-                        "estimatedAnnualSavings": 8500,
-                        "recommendedActions": [
-                            "Enable S3 bucket encryption for all data buckets",
-                            "Review and restrict public access policies",
-                            "Implement lifecycle policies for cost optimization"
-                        ],
-                        "aiReasoning": "AI performed real S3 bucket scanning using actual AWS API calls and identified compliance issues with automated remediation recommendations"
-                    },
-                    "agentVersion": "1.0.0",
-                    "modelUsed": "Claude 3.5 Sonnet"
-                };
-                
-                updateResponse(`S3 Compliance Scan Results:\n${JSON.stringify(s3Response, null, 2)}`);
-                updateResponse(`\nS3-Specific AI Insights:\n- Compliance Score: ${s3Response.aiInsights.complianceScore}%\n- Total Findings: ${s3Response.aiInsights.totalFindings}\n- Critical Findings: ${s3Response.aiInsights.criticalFindings}\n- Auto-remediable: ${s3Response.aiInsights.autoRemediableFindings}\n- Estimated Annual Savings: $${s3Response.aiInsights.estimatedAnnualSavings}\n- AI Reasoning: ${s3Response.aiInsights.aiReasoning}`);
-            }
-        }
 
         async function performIAMScan() {
             updateResponse('Starting focused IAM compliance scan...');
@@ -578,64 +505,7 @@
                 updateResponse(`IAM Compliance Scan Results:\n${JSON.stringify(data, null, 2)}`);
                 
             } catch (error) {
-                // Show IAM-focused mock response
-            const iamResponse = {
-                "message": "IAM Compliance Scan Complete",
-                "scanId": `iam-scan-${new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14)}`,
-                "timestamp": new Date().toISOString(),
-                "scanType": "general",
-                "useRealScanning": true,
-                "regions": ["us-east-1"],
-                "services": ["iam"],
-                "findings": [
-                    {
-                        "findingId": "IAM-001",
-                        "severity": "HIGH",
-                        "category": "Access Control",
-                        "title": "IAM Role with Excessive Permissions",
-                        "description": "AI identified IAM role with overly broad permissions",
-                        "resource": "arn:aws:iam::123456789012:role/AdminRole",
-                        "recommendation": "Apply principle of least privilege and reduce permissions",
-                        "autoRemediable": false,
-                        "aiAnalysis": "Role has admin-level permissions that exceed actual requirements",
-                        "complianceFrameworks": ["SOC2", "ISO27001"],
-                        "estimatedCost": 3000,
-                        "timestamp": new Date().toISOString()
-                    },
-                    {
-                        "findingId": "IAM-002",
-                        "severity": "MEDIUM",
-                        "category": "Security",
-                        "title": "IAM User Without MFA",
-                        "description": "AI detected IAM user without multi-factor authentication",
-                        "resource": "arn:aws:iam::123456789012:user/john.doe",
-                        "recommendation": "Enable MFA for all IAM users",
-                        "autoRemediable": true,
-                        "aiAnalysis": "MFA significantly reduces account compromise risk",
-                        "complianceFrameworks": ["SOC2", "CIS"],
-                        "estimatedCost": 1000,
-                        "timestamp": new Date().toISOString()
-                    }
-                ],
-                "aiInsights": {
-                    "complianceScore": 70,
-                    "totalFindings": 2,
-                    "criticalFindings": 1,
-                    "autoRemediableFindings": 1,
-                    "estimatedAnnualSavings": 4000,
-                    "recommendedActions": [
-                        "Review and reduce IAM role permissions",
-                        "Enable MFA for all IAM users",
-                        "Implement regular access reviews"
-                    ],
-                    "aiReasoning": "AI performed real IAM policy and role scanning using actual AWS API calls and identified security compliance issues"
-                },
-                "agentVersion": "1.0.0",
-                "modelUsed": "Claude 3.5 Sonnet"
-            };
-            
-            updateResponse(`IAM Compliance Scan Results:\n${JSON.stringify(iamResponse, null, 2)}`);
-            updateResponse(`\nIAM-Specific AI Insights:\n- Compliance Score: ${iamResponse.aiInsights.complianceScore}%\n- Total Findings: ${iamResponse.aiInsights.totalFindings}\n- Critical Findings: ${iamResponse.aiInsights.criticalFindings}\n- Auto-remediable: ${iamResponse.aiInsights.autoRemediableFindings}\n- Estimated Annual Savings: $${iamResponse.aiInsights.estimatedAnnualSavings}\n- AI Reasoning: ${iamResponse.aiInsights.aiReasoning}`);
+                updateResponse(`❌ IAM Scan Failed: ${error.message}\n\nPlease check API connectivity and AWS credentials.`);
             }
         }
 

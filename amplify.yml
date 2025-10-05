@@ -10,7 +10,7 @@ frontend:
       commands:
         - echo "Building AI Compliance Shepherd Demo..."
         - echo "Copying demo files to build directory..."
-        - cp -r demo/* .
+        - cp demo/* .
         - echo "Verifying copied files..."
         - ls -la
     postBuild:
@@ -21,6 +21,3 @@ frontend:
     baseDirectory: .
     files:
       - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*

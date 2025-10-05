@@ -321,7 +321,7 @@
         }
 
         async function simulateComplianceScan() {
-            updateResponse('Starting REAL AI Compliance Scan with Hybrid Mode...');
+            updateResponse('Starting AI Compliance Scan...');
             console.log('API_BASE:', API_BASE);
             
             try {
@@ -350,89 +350,16 @@
                 const data = await response.json();
                 console.log('Response data:', data);
                 
-                updateResponse(`REAL AI Agent Response:\n${JSON.stringify(data, null, 2)}`);
+                updateResponse(`AI Compliance Scan Results:\n${JSON.stringify(data, null, 2)}`);
                 
                 // Show AI insights
                 if (data.aiInsights) {
-                    updateResponse(`\nAI Insights:\n- Compliance Score: ${data.aiInsights.complianceScore}%\n- Total Findings: ${data.aiInsights.totalFindings}\n- Critical Findings: ${data.aiInsights.criticalFindings}\n- Auto-remediable: ${data.aiInsights.autoRemediableFindings}\n- Estimated Annual Savings: $${data.aiInsights.estimatedAnnualSavings}\n- AI Reasoning: ${data.aiInsights.aiReasoning}`);
+                    updateResponse(`\nAI Insights:\n- Compliance Score: ${data.aiInsights.complianceScore}%\n- Total Findings: ${data.aiInsights.totalFindings}\n- Critical Findings: ${data.aiInsights.criticalFindings}\n- Auto-remediable: ${data.aiInsights.autoRemediableFindings}\n- Estimated Annual Savings: $${data.aiInsights.estimatedAnnualSavings}\n- AI Analysis: ${data.aiInsights.aiReasoning}`);
                 }
                 
             } catch (error) {
                 console.error('API call failed:', error);
-                // Show success response instead of error
-                const successResponse = {
-                    "message": "AI Compliance Scan Complete",
-                    "scanId": `scan-${new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14)}`,
-                    "timestamp": new Date().toISOString(),
-                    "scanType": "general",
-                    "regions": ["us-east-1"],
-                    "services": ["s3", "iam", "ec2"],
-                    "useRealScanning": true,
-                    "findings": [
-                        {
-                            "findingId": "S3-001",
-                            "severity": "HIGH",
-                            "category": "Data Protection",
-                            "title": "S3 Bucket Without Encryption",
-                            "description": "AI detected S3 bucket without server-side encryption",
-                            "resource": "s3://sample-bucket",
-                            "recommendation": "Enable S3 bucket encryption using AES-256 or KMS",
-                            "autoRemediable": true,
-                            "aiAnalysis": "Critical security gap identified by AI reasoning engine",
-                            "complianceFrameworks": ["SOC2", "HIPAA", "PCI-DSS"],
-                            "estimatedCost": 5000,
-                            "timestamp": new Date().toISOString()
-                        },
-                        {
-                            "findingId": "IAM-001",
-                            "severity": "MEDIUM",
-                            "category": "Access Control",
-                            "title": "IAM Role with Excessive Permissions",
-                            "description": "AI identified IAM role with overly broad permissions",
-                            "resource": "arn:aws:iam::ACCOUNT:role/SampleRole",
-                            "recommendation": "Apply principle of least privilege and reduce permissions",
-                            "autoRemediable": false,
-                            "aiAnalysis": "AI recommends permission audit and reduction based on usage patterns",
-                            "complianceFrameworks": ["SOC2", "ISO27001"],
-                            "estimatedCost": 2000,
-                            "timestamp": new Date().toISOString()
-                        },
-                        {
-                            "findingId": "EC2-001",
-                            "severity": "HIGH",
-                            "category": "Security Configuration",
-                            "title": "EC2 Instance Without Security Groups",
-                            "description": "AI detected EC2 instance without proper security group configuration",
-                            "resource": "i-sample1234567890abcdef",
-                            "recommendation": "Configure security groups with restrictive rules",
-                            "autoRemediable": true,
-                            "aiAnalysis": "AI can auto-remediate by applying security group templates",
-                            "complianceFrameworks": ["SOC2", "CIS"],
-                            "estimatedCost": 3000,
-                            "timestamp": new Date().toISOString()
-                        }
-                    ],
-                    "aiInsights": {
-                        "complianceScore": 50,
-                        "totalFindings": 3,
-                        "criticalFindings": 2,
-                        "autoRemediableFindings": 2,
-                        "estimatedAnnualSavings": 10000,
-                        "recommendedActions": [
-                            "Enable S3 encryption for data protection",
-                            "Review IAM permissions for least privilege",
-                            "Configure EC2 security groups"
-                        ],
-                        "aiReasoning": "AI agent performed real AWS resource scanning using actual API calls and identified security gaps with automated remediation recommendations"
-                    },
-                    "agentVersion": "1.0.0",
-                    "modelUsed": "Claude 3.5 Sonnet"
-                };
-                
-                updateResponse(`REAL AI Agent Response:\n${JSON.stringify(successResponse, null, 2)}`);
-                
-                // Show AI insights
-                updateResponse(`\nAI Insights:\n- Compliance Score: ${successResponse.aiInsights.complianceScore}%\n- Total Findings: ${successResponse.aiInsights.totalFindings}\n- Critical Findings: ${successResponse.aiInsights.criticalFindings}\n- Auto-remediable: ${successResponse.aiInsights.autoRemediableFindings}\n- Estimated Annual Savings: $${successResponse.aiInsights.estimatedAnnualSavings}\n- AI Reasoning: ${successResponse.aiInsights.aiReasoning}`);
+                updateResponse(`❌ Scan Failed: ${error.message}\n\nPlease check:\n- API Gateway is deployed and accessible\n- AWS credentials are configured\n- Network connectivity is available\n\nError details: ${error.message}`);
             }
         }
 
@@ -552,7 +479,9 @@
                 updateResponse(`S3 Compliance Scan Results:\n${JSON.stringify(data, null, 2)}`);
                 
             } catch (error) {
-                // Show S3-focused mock response
+                updateResponse(`❌ S3 Scan Failed: ${error.message}\n\nPlease check API connectivity and AWS credentials.`);
+            }
+        }
                 const s3Response = {
                     "message": "S3 Compliance Scan Complete",
                     "scanId": `s3-scan-${new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14)}`,

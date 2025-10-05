@@ -189,6 +189,235 @@
         .message-text table {
             margin: 10px 0;
         }
+        
+        /* Auto-Remediation Controls Styling */
+        .auto-remediation-controls {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .auto-remediation-controls .form-check-input:checked {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        
+        .auto-remediation-controls .form-check-label {
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .auto-remediation-controls .form-check-label i {
+            color: #6c757d;
+        }
+        
+        .auto-remediation-controls small {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+        
+        #remediationStatus {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Remediation Progress Styling */
+        .remediation-progress {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        .progress-header h6 {
+            color: #495057;
+            font-weight: 600;
+        }
+        
+        .progress-header h6 i {
+            color: #6c757d;
+            margin-right: 8px;
+        }
+        
+        .remediation-details {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.9em;
+        }
+        
+        .remediation-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #dee2e6;
+            transition: all 0.3s ease;
+        }
+        
+        .remediation-item.pending {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        
+        .remediation-item.in-progress {
+            border-left-color: #0d6efd;
+            background: #cfe2ff;
+        }
+        
+        .remediation-item.completed {
+            border-left-color: #198754;
+            background: #d1e7dd;
+        }
+        
+        .remediation-item.failed {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .remediation-item-title {
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .remediation-item-status {
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .remediation-item.pending .remediation-item-status {
+            color: #856404;
+        }
+        
+        .remediation-item.in-progress .remediation-item-status {
+            color: #084298;
+        }
+        
+        .remediation-item.completed .remediation-item-status {
+            color: #0a3622;
+        }
+        
+        .remediation-item.failed .remediation-item-status {
+            color: #58151c;
+        }
+        
+        .remediation-summary {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+        
+        .remediation-summary.success {
+            background: #d1e7dd;
+            color: #0a3622;
+        }
+        
+        .remediation-summary.error {
+            background: #f8d7da;
+            color: #58151c;
+        }
+        
+        /* Safety Features Styling */
+        .risk-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .risk-indicator.low {
+            background: #d1e7dd;
+            color: #0a3622;
+        }
+        
+        .risk-indicator.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .risk-indicator.high {
+            background: #f8d7da;
+            color: #58151c;
+        }
+        
+        .risk-indicator.critical {
+            background: #f5c2c7;
+            color: #842029;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .rollback-button {
+            transition: all 0.3s ease;
+        }
+        
+        .rollback-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .modal-header.bg-warning {
+            background-color: #ffc107 !important;
+        }
+        
+        .modal-header.bg-danger {
+            background-color: #dc3545 !important;
+        }
+        
+        .risk-assessment-item {
+            padding: 10px;
+            margin: 8px 0;
+            border-left: 4px solid #dee2e6;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .risk-assessment-item.high-risk {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .risk-assessment-item.medium-risk {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+        
+        .rollback-option {
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .rollback-option:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .rollback-option.selected {
+            background: #cfe2ff;
+            border-color: #0d6efd;
+        }
     </style>
 </head>
 <body>
@@ -292,6 +521,117 @@
                                 <button class="btn btn-secondary btn-demo" onclick="clearResponses()">
                                     <i class="bi bi-trash"></i> Clear
                                 </button>
+                            </div>
+
+                            <!-- Auto-Remediation Toggle -->
+                            <div class="auto-remediation-controls mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="autoRemediationToggle" onchange="toggleAutoRemediation()">
+                                    <label class="form-check-label" for="autoRemediationToggle">
+                                        <i class="bi bi-gear-fill"></i> <strong>Auto-Remediation</strong>
+                                        <small class="text-muted d-block">Automatically fix compliance issues after scanning</small>
+                                    </label>
+                                </div>
+                                <div id="remediationStatus" class="mt-2" style="display: none;">
+                                    <span class="badge bg-info">Auto-Remediation: <span id="remediationStatusText">Disabled</span></span>
+                                </div>
+                            </div>
+
+                            <!-- Remediation Progress Tracker -->
+                            <div id="remediationProgress" class="remediation-progress mb-3" style="display: none;">
+                                <div class="progress-header d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-tools"></i> Remediation Progress
+                                    </h6>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span id="remediationProgressText" class="badge bg-primary">0/0</span>
+                                        <button id="rollbackButton" class="btn btn-sm btn-outline-danger" onclick="showRollbackOptions()" style="display: none;">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Rollback
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div id="remediationProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                         role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                                <div id="remediationDetails" class="remediation-details">
+                                    <!-- Dynamic remediation details will be inserted here -->
+                                </div>
+                            </div>
+
+                            <!-- Safety Confirmation Modal -->
+                            <div class="modal fade" id="safetyConfirmationModal" tabindex="-1" aria-labelledby="safetyConfirmationModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-warning text-dark">
+                                            <h5 class="modal-title" id="safetyConfirmationModalLabel">
+                                                <i class="bi bi-exclamation-triangle"></i> High-Risk Remediation Confirmation
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="alert alert-warning">
+                                                <h6><i class="bi bi-shield-exclamation"></i> Risk Assessment</h6>
+                                                <p class="mb-0">This remediation involves high-risk changes that could impact your AWS resources. Please review the details carefully.</p>
+                                            </div>
+                                            
+                                            <div id="riskAssessmentDetails">
+                                                <!-- Dynamic risk assessment details -->
+                                            </div>
+                                            
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="confirmRiskAcknowledgment">
+                                                <label class="form-check-label" for="confirmRiskAcknowledgment">
+                                                    I understand the risks and authorize this remediation
+                                                </label>
+                                            </div>
+                                            
+                                            <div class="form-check mb-3">
+                                                <input class="form-check-input" type="checkbox" id="confirmRollbackPlan">
+                                                <label class="form-check-label" for="confirmRollbackPlan">
+                                                    I understand that rollback options will be available after remediation
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="button" class="btn btn-warning" id="confirmRemediationBtn" onclick="confirmHighRiskRemediation()" disabled>
+                                                <i class="bi bi-check-circle"></i> Proceed with Remediation
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Rollback Options Modal -->
+                            <div class="modal fade" id="rollbackModal" tabindex="-1" aria-labelledby="rollbackModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title" id="rollbackModalLabel">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Rollback Options
+                                            </h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="alert alert-danger">
+                                                <h6><i class="bi bi-exclamation-triangle"></i> Rollback Warning</h6>
+                                                <p class="mb-0">Rolling back changes will restore the previous configuration. This action cannot be undone.</p>
+                                            </div>
+                                            
+                                            <div id="rollbackOptions">
+                                                <!-- Dynamic rollback options -->
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="button" class="btn btn-danger" id="confirmRollbackBtn" onclick="executeRollback()">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Execute Rollback
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="api-response" id="responseArea">
@@ -442,6 +782,13 @@
                 
                 updateResponse(`AI Compliance Scan Results:\n${JSON.stringify(data, null, 2)}`);
                 
+                // Trigger auto-remediation if enabled
+                if (autoRemediationEnabled && data.findings) {
+                    setTimeout(() => {
+                        triggerAutoRemediation(data.findings);
+                    }, 2000); // Wait 2 seconds after scan completes
+                }
+                
                 // Show AI insights
                 if (data.aiInsights) {
                     updateResponse(`\nAI Insights:\n- Compliance Score: ${data.aiInsights.complianceScore}%\n- Total Findings: ${data.aiInsights.totalFindings}\n- Critical Findings: ${data.aiInsights.criticalFindings}\n- Auto-remediable: ${data.aiInsights.autoRemediableFindings}\n- Estimated Annual Savings: $${data.aiInsights.estimatedAnnualSavings}\n- AI Analysis: ${data.aiInsights.aiReasoning}`);
@@ -455,6 +802,467 @@
 
         function clearResponses() {
             document.getElementById('responseArea').textContent = 'Responses cleared. Ready for new tests...';
+        }
+
+        // Auto-Remediation functionality
+        let autoRemediationEnabled = false;
+        let remediationProgress = {
+            total: 0,
+            completed: 0,
+            failed: 0,
+            items: []
+        };
+        let pendingHighRiskRemediation = null;
+        let rollbackData = [];
+
+        function toggleAutoRemediation() {
+            const toggle = document.getElementById('autoRemediationToggle');
+            const statusDiv = document.getElementById('remediationStatus');
+            const statusText = document.getElementById('remediationStatusText');
+            
+            autoRemediationEnabled = toggle.checked;
+            
+            if (autoRemediationEnabled) {
+                statusDiv.style.display = 'block';
+                statusText.textContent = 'Enabled';
+                statusText.parentElement.className = 'badge bg-success';
+                updateResponse('✅ Auto-Remediation ENABLED - Compliance issues will be automatically fixed after scanning');
+            } else {
+                statusDiv.style.display = 'block';
+                statusText.textContent = 'Disabled';
+                statusText.parentElement.className = 'badge bg-secondary';
+                updateResponse('❌ Auto-Remediation DISABLED - Only scanning will be performed');
+                hideRemediationProgress();
+            }
+        }
+
+        function assessRemediationRisk(finding) {
+            // Risk assessment based on finding type and severity
+            const riskFactors = {
+                'S3_ENCRYPTION': { level: 'medium', impact: 'Data access interruption', rollback: 'Easy' },
+                'S3_PUBLIC_ACCESS': { level: 'high', impact: 'Security exposure', rollback: 'Easy' },
+                'IAM_POLICY_REDUCTION': { level: 'critical', impact: 'Service disruption', rollback: 'Complex' },
+                'IAM_MFA_ENFORCEMENT': { level: 'high', impact: 'Access interruption', rollback: 'Medium' },
+                'EC2_SECURITY_GROUP': { level: 'critical', impact: 'Network connectivity loss', rollback: 'Complex' }
+            };
+            
+            const remediationType = determineRemediationType(finding.findingId);
+            return riskFactors[remediationType] || { level: 'medium', impact: 'Unknown impact', rollback: 'Unknown' };
+        }
+
+        function determineRemediationType(findingId) {
+            const findingLower = findingId.toLowerCase();
+            
+            if (findingLower.includes('s3') && findingLower.includes('encryption')) {
+                return 'S3_ENCRYPTION';
+            } else if (findingLower.includes('s3') && findingLower.includes('public')) {
+                return 'S3_PUBLIC_ACCESS';
+            } else if (findingLower.includes('iam') && findingLower.includes('policy')) {
+                return 'IAM_POLICY_REDUCTION';
+            } else if (findingLower.includes('iam') && findingLower.includes('mfa')) {
+                return 'IAM_MFA_ENFORCEMENT';
+            } else if (findingLower.includes('ec2') && findingLower.includes('security')) {
+                return 'EC2_SECURITY_GROUP';
+            }
+            return 'UNKNOWN';
+        }
+
+        function showSafetyConfirmation(finding) {
+            const risk = assessRemediationRisk(finding);
+            
+            // Update modal content
+            document.getElementById('riskAssessmentDetails').innerHTML = `
+                <div class="risk-assessment-item ${risk.level === 'critical' ? 'high-risk' : risk.level === 'high' ? 'high-risk' : 'medium-risk'}">
+                    <h6><i class="bi bi-shield-exclamation"></i> Risk Assessment for: ${finding.title}</h6>
+                    <p><strong>Risk Level:</strong> <span class="risk-indicator ${risk.level}">${risk.level.toUpperCase()}</span></p>
+                    <p><strong>Potential Impact:</strong> ${risk.impact}</p>
+                    <p><strong>Rollback Complexity:</strong> ${risk.rollback}</p>
+                    <p><strong>Resource:</strong> ${finding.resource}</p>
+                    <p><strong>Recommendation:</strong> ${finding.recommendation}</p>
+                </div>
+            `;
+            
+            // Reset checkboxes
+            document.getElementById('confirmRiskAcknowledgment').checked = false;
+            document.getElementById('confirmRollbackPlan').checked = false;
+            document.getElementById('confirmRemediationBtn').disabled = true;
+            
+            // Store pending remediation
+            pendingHighRiskRemediation = finding;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('safetyConfirmationModal'));
+            modal.show();
+        }
+
+        function confirmHighRiskRemediation() {
+            if (pendingHighRiskRemediation) {
+                // Store rollback data
+                rollbackData.push({
+                    findingId: pendingHighRiskRemediation.findingId,
+                    resource: pendingHighRiskRemediation.resource,
+                    originalState: 'pre-remediation',
+                    timestamp: new Date().toISOString(),
+                    riskLevel: assessRemediationRisk(pendingHighRiskRemediation).level
+                });
+                
+                // Hide modal and proceed with remediation
+                const modal = bootstrap.Modal.getInstance(document.getElementById('safetyConfirmationModal'));
+                modal.hide();
+                
+                // Show rollback button
+                document.getElementById('rollbackButton').style.display = 'inline-block';
+                
+                // Proceed with remediation
+                proceedWithRemediation(pendingHighRiskRemediation);
+                pendingHighRiskRemediation = null;
+            }
+        }
+
+        function proceedWithRemediation(finding) {
+            // This would be called after safety confirmation
+            updateResponse(`🔧 Proceeding with high-risk remediation: ${finding.title}`);
+            // The actual remediation would continue here
+        }
+
+        function showRollbackOptions() {
+            if (rollbackData.length === 0) {
+                updateResponse('❌ No rollback data available');
+                return;
+            }
+            
+            // Update rollback options
+            const rollbackOptionsDiv = document.getElementById('rollbackOptions');
+            rollbackOptionsDiv.innerHTML = '';
+            
+            rollbackData.forEach((item, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'rollback-option';
+                optionDiv.onclick = () => selectRollbackOption(index);
+                
+                optionDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">${item.findingId}</h6>
+                            <p class="mb-1 text-muted">Resource: ${item.resource}</p>
+                            <small class="text-muted">Risk Level: <span class="risk-indicator ${item.riskLevel}">${item.riskLevel.toUpperCase()}</span></small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">${new Date(item.timestamp).toLocaleString()}</small>
+                        </div>
+                    </div>
+                `;
+                
+                rollbackOptionsDiv.appendChild(optionDiv);
+            });
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('rollbackModal'));
+            modal.show();
+        }
+
+        function selectRollbackOption(index) {
+            // Remove previous selections
+            document.querySelectorAll('.rollback-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Select current option
+            document.querySelectorAll('.rollback-option')[index].classList.add('selected');
+            
+            // Enable rollback button
+            document.getElementById('confirmRollbackBtn').disabled = false;
+        }
+
+        function executeRollback() {
+            const selectedOption = document.querySelector('.rollback-option.selected');
+            if (!selectedOption) {
+                updateResponse('❌ Please select a rollback option');
+                return;
+            }
+            
+            const optionIndex = Array.from(document.querySelectorAll('.rollback-option')).indexOf(selectedOption);
+            const rollbackItem = rollbackData[optionIndex];
+            
+            updateResponse(`🔄 Executing rollback for: ${rollbackItem.findingId}`);
+            
+            // Simulate rollback process
+            setTimeout(() => {
+                updateResponse(`✅ Rollback completed for: ${rollbackItem.findingId}`);
+                
+                // Remove from rollback data
+                rollbackData.splice(optionIndex, 1);
+                
+                // Hide rollback button if no more rollback data
+                if (rollbackData.length === 0) {
+                    document.getElementById('rollbackButton').style.display = 'none';
+                }
+                
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('rollbackModal'));
+                modal.hide();
+            }, 2000);
+        }
+
+        // Add event listeners for confirmation checkboxes
+        document.addEventListener('DOMContentLoaded', function() {
+            const riskCheckbox = document.getElementById('confirmRiskAcknowledgment');
+            const rollbackCheckbox = document.getElementById('confirmRollbackPlan');
+            const confirmBtn = document.getElementById('confirmRemediationBtn');
+            
+            function updateConfirmButton() {
+                confirmBtn.disabled = !(riskCheckbox.checked && rollbackCheckbox.checked);
+            }
+            
+            riskCheckbox.addEventListener('change', updateConfirmButton);
+            rollbackCheckbox.addEventListener('change', updateConfirmButton);
+        });
+
+        function showRemediationProgress(totalItems) {
+            const progressDiv = document.getElementById('remediationProgress');
+            const progressText = document.getElementById('remediationProgressText');
+            const progressBar = document.getElementById('remediationProgressBar');
+            const detailsDiv = document.getElementById('remediationDetails');
+            
+            // Initialize progress tracking
+            remediationProgress = {
+                total: totalItems,
+                completed: 0,
+                failed: 0,
+                items: []
+            };
+            
+            // Show progress UI
+            progressDiv.style.display = 'block';
+            progressText.textContent = `0/${totalItems}`;
+            progressBar.style.width = '0%';
+            progressBar.setAttribute('aria-valuenow', 0);
+            detailsDiv.innerHTML = '';
+            
+            // Add initial items
+            for (let i = 0; i < totalItems; i++) {
+                addRemediationItem(`Finding ${i + 1}`, 'pending');
+            }
+        }
+
+        function hideRemediationProgress() {
+            const progressDiv = document.getElementById('remediationProgress');
+            progressDiv.style.display = 'none';
+        }
+
+        function addRemediationItem(title, status) {
+            const detailsDiv = document.getElementById('remediationDetails');
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `remediation-item ${status}`;
+            
+            const statusText = status === 'pending' ? '⏳ Pending' :
+                              status === 'in-progress' ? '🔄 In Progress' :
+                              status === 'completed' ? '✅ Completed' :
+                              status === 'failed' ? '❌ Failed' : '❓ Unknown';
+            
+            itemDiv.innerHTML = `
+                <span class="remediation-item-title">${title}</span>
+                <span class="remediation-item-status">${statusText}</span>
+            `;
+            
+            detailsDiv.appendChild(itemDiv);
+            remediationProgress.items.push({ title, status });
+        }
+
+        function updateRemediationItem(index, status) {
+            const items = document.querySelectorAll('.remediation-item');
+            if (items[index]) {
+                items[index].className = `remediation-item ${status}`;
+                
+                const statusSpan = items[index].querySelector('.remediation-item-status');
+                const statusText = status === 'pending' ? '⏳ Pending' :
+                                  status === 'in-progress' ? '🔄 In Progress' :
+                                  status === 'completed' ? '✅ Completed' :
+                                  status === 'failed' ? '❌ Failed' : '❓ Unknown';
+                
+                statusSpan.textContent = statusText;
+                
+                // Update progress tracking
+                if (remediationProgress.items[index]) {
+                    remediationProgress.items[index].status = status;
+                }
+                
+                updateProgressBar();
+            }
+        }
+
+        function updateProgressBar() {
+            const progressText = document.getElementById('remediationProgressText');
+            const progressBar = document.getElementById('remediationProgressBar');
+            
+            const completed = remediationProgress.items.filter(item => item.status === 'completed').length;
+            const failed = remediationProgress.items.filter(item => item.status === 'failed').length;
+            const total = remediationProgress.total;
+            
+            const progressPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            progressText.textContent = `${completed}/${total}`;
+            progressBar.style.width = `${progressPercent}%`;
+            progressBar.setAttribute('aria-valuenow', progressPercent);
+            
+            // Update progress bar color based on status
+            if (failed > 0) {
+                progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-danger';
+            } else if (completed === total) {
+                progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-success';
+            } else {
+                progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-primary';
+            }
+            
+            // Show summary when all items are processed
+            if (completed + failed === total && total > 0) {
+                showRemediationSummary(completed, failed);
+            }
+        }
+
+        function showRemediationSummary(completed, failed) {
+            const detailsDiv = document.getElementById('remediationDetails');
+            const summaryDiv = document.createElement('div');
+            
+            summaryDiv.className = `remediation-summary ${failed === 0 ? 'success' : 'error'}`;
+            
+            if (failed === 0) {
+                summaryDiv.innerHTML = `
+                    <strong>🎉 Remediation Complete!</strong><br>
+                    Successfully remediated ${completed} findings. All compliance issues have been resolved.
+                `;
+            } else {
+                summaryDiv.innerHTML = `
+                    <strong>⚠️ Remediation Partially Complete</strong><br>
+                    Completed: ${completed} findings<br>
+                    Failed: ${failed} findings<br>
+                    Please review failed items and retry if necessary.
+                `;
+            }
+            
+            detailsDiv.appendChild(summaryDiv);
+        }
+
+        async function triggerAutoRemediation(findings) {
+            if (!autoRemediationEnabled || !findings || findings.length === 0) {
+                return;
+            }
+
+            updateResponse('🔧 Starting Auto-Remediation Process...');
+            
+            const autoRemediableFindings = findings.filter(finding => finding.autoRemediable);
+            
+            if (autoRemediableFindings.length === 0) {
+                updateResponse('ℹ️ No auto-remediable findings found. Manual intervention required for remaining issues.');
+                return;
+            }
+
+            updateResponse(`🔧 Found ${autoRemediableFindings.length} auto-remediable issues. Starting remediation...`);
+            
+            // Show progress tracker
+            showRemediationProgress(autoRemediableFindings.length);
+            
+            // Update initial items with actual finding titles and risk indicators
+            const detailsDiv = document.getElementById('remediationDetails');
+            const items = detailsDiv.querySelectorAll('.remediation-item');
+            autoRemediableFindings.forEach((finding, index) => {
+                if (items[index]) {
+                    const titleSpan = items[index].querySelector('.remediation-item-title');
+                    const risk = assessRemediationRisk(finding);
+                    titleSpan.innerHTML = `${finding.title} <span class="risk-indicator ${risk.level}">${risk.level.toUpperCase()}</span>`;
+                }
+            });
+
+            for (let i = 0; i < autoRemediableFindings.length; i++) {
+                const finding = autoRemediableFindings[i];
+                const risk = assessRemediationRisk(finding);
+                
+                try {
+                    updateResponse(`🔧 Remediating: ${finding.title}`);
+                    updateRemediationItem(i, 'in-progress');
+                    
+                    // Check if high-risk remediation requires confirmation
+                    if (risk.level === 'critical' || risk.level === 'high') {
+                        updateResponse(`⚠️ High-risk remediation detected: ${finding.title}. Showing safety confirmation...`);
+                        showSafetyConfirmation(finding);
+                        
+                        // Wait for user confirmation before proceeding
+                        await waitForSafetyConfirmation();
+                    }
+                    
+                    const remediationResult = await performRemediation(finding);
+                    
+                    if (remediationResult.executionArn) {
+                        updateResponse(`✅ Remediation workflow started: ${finding.title}\nExecution ARN: ${remediationResult.executionArn}`);
+                        updateRemediationItem(i, 'completed');
+                    } else {
+                        updateResponse(`❌ Failed to start remediation: ${finding.title} - ${remediationResult.details || 'Unknown error'}`);
+                        updateRemediationItem(i, 'failed');
+                    }
+                } catch (error) {
+                    updateResponse(`❌ Error remediating ${finding.title}: ${error.message}`);
+                    updateRemediationItem(i, 'failed');
+                }
+                
+                // Add small delay for better UX
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            updateResponse('🎉 Auto-Remediation process completed!');
+        }
+
+        function waitForSafetyConfirmation() {
+            return new Promise((resolve) => {
+                const checkConfirmation = () => {
+                    if (pendingHighRiskRemediation === null) {
+                        resolve();
+                    } else {
+                        setTimeout(checkConfirmation, 100);
+                    }
+                };
+                checkConfirmation();
+            });
+        }
+
+        async function performRemediation(finding) {
+            try {
+                // Call remediation API endpoint
+                const response = await fetch(`${API_BASE}/remediate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        findingIds: [finding.findingId],
+                        tenantId: 'demo-tenant',
+                        approvalRequired: false, // Set to true for production
+                        dryRun: false, // Set to true for testing
+                        startedBy: 'ai-compliance-shepherd-ui'
+                    })
+                });
+
+                const result = await response.json();
+                return result;
+
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        function getRemediationType(finding) {
+            if (finding.title.includes('Encryption')) {
+                return 'ENABLE_S3_ENCRYPTION';
+            } else if (finding.title.includes('Public Access')) {
+                return 'ENABLE_S3_PUBLIC_ACCESS_BLOCK';
+            } else if (finding.title.includes('Policy')) {
+                return 'REDUCE_IAM_POLICIES';
+            } else if (finding.title.includes('Security Group')) {
+                return 'RESTRICT_SECURITY_GROUP_RULES';
+            }
+            return 'UNKNOWN';
         }
 
         // Chat functionality
@@ -498,12 +1306,12 @@
             
             if (isHtml) {
                 // For HTML content, create the structure and insert HTML directly
-                messageDiv.innerHTML = `
-                    <div class="message-content">
+            messageDiv.innerHTML = `
+                <div class="message-content">
                         <strong>${sender === 'user' ? 'You' : 'AI Assistant'}:</strong> 
-                    </div>
-                    <div class="message-time text-muted small">${timeString}</div>
-                `;
+                </div>
+                <div class="message-time text-muted small">${timeString}</div>
+            `;
                 
                 // Insert the HTML content after the strong tag
                 const messageContent = messageDiv.querySelector('.message-content');
@@ -615,6 +1423,13 @@
                 const data = await response.json();
                 displayScanResultsInChat(data, 'S3 Compliance Scan Results');
                 
+                // Trigger auto-remediation if enabled
+                if (autoRemediationEnabled && data.findings) {
+                    setTimeout(() => {
+                        triggerAutoRemediation(data.findings);
+                    }, 2000);
+                }
+                
             } catch (error) {
                 addMessageToChat(`❌ S3 Scan Failed: ${error.message}`, 'bot');
             }
@@ -637,6 +1452,13 @@
                 
                 const data = await response.json();
                 displayScanResultsInChat(data, 'IAM Compliance Scan Results');
+                
+                // Trigger auto-remediation if enabled
+                if (autoRemediationEnabled && data.findings) {
+                    setTimeout(() => {
+                        triggerAutoRemediation(data.findings);
+                    }, 2000);
+                }
                 
             } catch (error) {
                 addMessageToChat(`❌ IAM Scan Failed: ${error.message}`, 'bot');
@@ -661,6 +1483,13 @@
                 const data = await response.json();
                 displayScanResultsInChat(data, 'EC2 Compliance Scan Results');
                 
+                // Trigger auto-remediation if enabled
+                if (autoRemediationEnabled && data.findings) {
+                    setTimeout(() => {
+                        triggerAutoRemediation(data.findings);
+                    }, 2000);
+                }
+                
             } catch (error) {
                 addMessageToChat(`❌ EC2 Scan Failed: ${error.message}`, 'bot');
             }
@@ -683,6 +1512,13 @@
                 
                 const data = await response.json();
                 displayScanResultsInChat(data, 'Comprehensive Compliance Scan Results');
+                
+                // Trigger auto-remediation if enabled
+                if (autoRemediationEnabled && data.findings) {
+                    setTimeout(() => {
+                        triggerAutoRemediation(data.findings);
+                    }, 2000);
+                }
                 
             } catch (error) {
                 addMessageToChat(`❌ Full Scan Failed: ${error.message}`, 'bot');

@@ -313,6 +313,16 @@ def scan_s3_resources(regions: List[str]) -> List[Dict[str, Any]]:
                     })
                 else:
                     print(f"SKIPPING public access check for bucket '{bucket_name}' due to API error: {e.response['Error']['Code']} - {e.response['Error']['Message']}")
+                    findings.append({
+                        "findingId": f"S3-SCAN-ERROR-{bucket_name.replace('-', '').upper()}",
+                        "severity": "INFO",
+                        "category": "Scanner Operation",
+                        "title": f"Could not scan S3 bucket '{bucket_name}' for public access",
+                        "description": f"The scanner encountered an API error: {e.response['Error']['Code']} - {e.response['Error']['Message']}. Please check the scanner's IAM permissions.",
+                        "resource": f"s3://{bucket_name}",
+                        "recommendation": "Ensure the scanner role has s3:GetBucketPublicAccessBlock permissions for this bucket.",
+                        "autoRemediable": False
+                    })
             except Exception as e:
                 print(f"SKIPPING public access check for bucket '{bucket_name}' due to unexpected error: {str(e)}")
                 
@@ -493,6 +503,16 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
                                                                 })
                                         except Exception as e:
                                             print(f"Error checking security group {sg_id}: {str(e)}")
+                                            findings.append({
+                                                "findingId": f"EC2-SCAN-ERROR-{sg_id.replace('-', '').upper()}",
+                                                "severity": "INFO",
+                                                "category": "Scanner Operation",
+                                                "title": f"Could not scan Security Group '{sg_id}'",
+                                                "description": f"The scanner encountered an error trying to describe security group rules: {str(e)}. Please check the scanner's IAM permissions.",
+                                                "resource": sg_id,
+                                                "recommendation": "Ensure the scanner role has ec2:DescribeSecurityGroups permissions.",
+                                                "autoRemediable": False
+                                            })
                                             continue
                                     
             except Exception as e:
@@ -523,6 +543,7 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
         's3:ListAllMyBuckets',
         's3:GetBucketEncryption',
         's3:GetPublicAccessBlock',
+        's3:GetBucketPublicAccessBlock',
         'iam:ListRoles',
         'iam:ListAttachedRolePolicies',
         'iam:ListRolePolicies',
@@ -795,7 +816,7 @@ def handler(event, context):
 def initialize_remediation_job(event):
     """Initialize remediation job for Step Functions workflow"""
     try:
-        finding_ids = event.get('findingIds', [])
+        findings = event.get('findings', [])
         tenant_id = event.get('tenantId', 'demo-tenant')
         correlation_id = event.get('correlationId', '')
         
@@ -805,7 +826,7 @@ def initialize_remediation_job(event):
         return {
             "remediationJobId": job_id,
             "tenantId": tenant_id,
-            "findingIds": finding_ids,
+            "findings": findings,
             "status": "INITIALIZED",
             "timestamp": datetime.utcnow().isoformat()
         }
@@ -1236,9 +1257,9 @@ def generate_ai_insights(findings, services):
               "FunctionName": complianceScannerLambda.functionArn,
               "Payload": {
                 "action": "initializeRemediation",
-                "findingIds.$": "$.parameters.findingIds",
+                "findings.$": "$.parameters.findings",
                 "tenantId.$": "$.tenantId",
-                "correlationId.$": "$.correlationId",
+                "correlationId.$": "$$.Execution.Name",
                 "dryRun.$": "$.parameters.dryRun",
                 "approvalRequired.$": "$.parameters.approvalRequired"
               }
@@ -1271,7 +1292,7 @@ def generate_ai_insights(findings, services):
                 "action": "checkApproval",
                 "remediationJobId.$": "$.remediationJob.remediationJobId",
                 "tenantId.$": "$.tenantId",
-                "correlationId.$": "$.correlationId"
+                "correlationId.$": "$$.Execution.Name"
               }
             },
             "Next": "EvaluateApproval"
@@ -1298,7 +1319,7 @@ def generate_ai_insights(findings, services):
             "Parameters": {
               "finding.$": "$$.Map.Item.Value",
               "tenantId.$": "$.tenantId",
-              "correlationId.$": "$.correlationId",
+              "correlationId.$": "$$.Execution.Name",
               "dryRun.$": "$.parameters.dryRun"
             },
             "MaxConcurrency": 5,
@@ -1411,6 +1432,9 @@ def generate_ai_insights(findings, services):
         }
       })
     });
+
+    // Add remediation workflow ARN to compliance scanner Lambda environment
+    complianceScannerLambda.addEnvironment('REMEDIATION_WORKFLOW_ARN', 'arn:aws:states:us-east-1:556274720247:stateMachine:RemediationWorkflow');
 
     // API Gateway for the AI Agent with CORS configuration
     const api = new cdk.aws_apigateway.RestApi(this, 'AiComplianceAgentApiV2', {

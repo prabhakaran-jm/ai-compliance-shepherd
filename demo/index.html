@@ -1268,7 +1268,7 @@
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        findingIds: [finding.findingId],
+                        findings: [finding],
                         tenantId: 'demo-tenant',
                         approvalRequired: false, // Set to true for production
                         dryRun: false, // Set to true for testing

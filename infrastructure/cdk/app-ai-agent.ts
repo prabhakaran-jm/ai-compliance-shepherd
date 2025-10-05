@@ -1431,10 +1431,11 @@ def generate_ai_insights(findings, services):
     });
 
     const cors = {
-      allowOrigins: ['*'],
+      allowOrigins: ['*', 'https://demo.cloudaimldevops.com'],
       allowHeaders: ['Content-Type','X-Amz-Date','Authorization','X-Api-Key','X-Amz-Security-Token'],
       allowMethods: ['GET','POST','OPTIONS'],
-      allowCredentials: false
+      allowCredentials: false,
+      statusCode: 200
     };
 
     // Lambda integration
@@ -1446,23 +1447,24 @@ def generate_ai_insights(findings, services):
     const agentRes  = api.root.addResource('agent');
     const remediateRes = api.root.addResource('remediate');
 
-    scanRes.addCorsPreflight(cors);
-    healthRes.addCorsPreflight(cors);
-    agentRes.addCorsPreflight(cors);
-    remediateRes.addCorsPreflight(cors);
-
     const scanPost   = scanRes.addMethod('POST', lambdaIntegration);
     const healthGet  = healthRes.addMethod('GET',  lambdaIntegration);
     const agentPost  = agentRes.addMethod('POST', lambdaIntegration);
     const remediatePost = remediateRes.addMethod('POST', lambdaIntegration);
 
-    // Explicit deployment and stage with dependencies on methods with integrations only
+    // Add CORS preflight after methods are created
+    const scanCors = scanRes.addCorsPreflight(cors);
+    const healthCors = healthRes.addCorsPreflight(cors);
+    const agentCors = agentRes.addCorsPreflight(cors);
+    const remediateCors = remediateRes.addCorsPreflight(cors);
+
+    // Explicit deployment and stage with dependencies on ALL methods including CORS
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v2' // bump to v2 when routes change - force redeploy for CORS fix
+      description: 'v3' // bump to v3 when routes change - force redeploy for CORS fix
     });
-    // Only depend on methods that have integrations (not OPTIONS methods)
-    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);
+    // Depend on all methods including CORS OPTIONS methods
+    deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost, scanCors, healthCors, agentCors, remediateCors);
 
     // API access logs for monitoring
     const apiLogGroup = new cdk.aws_logs.LogGroup(this, 'ApiAccessLogs', {

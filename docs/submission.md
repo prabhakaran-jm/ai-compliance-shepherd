@@ -123,6 +123,21 @@
 - **API Gateway**: RESTful APIs with authentication
 - **Bedrock Agent**: Configured with 6 action groups
 
+### **Real Scanning Capabilities**
+- **Live AWS Resource Discovery**: Actual S3, IAM, and EC2 resource scanning
+- **AI-Powered Analysis**: Claude 3.5 Sonnet analyzes real AWS data
+- **Compliance Scoring**: Real-time calculation based on actual violations
+- **Custom CloudWatch Metrics**: Comprehensive monitoring dashboard
+- **Cost Optimization**: Identifies potential annual savings from compliance gaps
+
+### **Enhanced Monitoring Dashboard**
+- **CloudWatch Dashboard**: Real-time metrics for all scanning activities
+- **Custom Metrics**: S3 buckets scanned, IAM roles analyzed, EC2 instances checked
+- **Severity Tracking**: Critical, High, Medium, Low findings by category
+- **Performance Metrics**: Lambda invocations, API Gateway latency, DynamoDB usage
+- **AI Model Usage**: Bedrock invocation counts and error tracking
+- **Cost Savings Tracking**: Estimated annual savings from compliance improvements
+
 ---
 
 ## 📋 **Submission Materials**

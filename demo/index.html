@@ -1235,7 +1235,7 @@
                 const response = await fetch(`${API_BASE}/remediate`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'text/plain'
                     },
                     body: JSON.stringify({
                         findingIds: [finding.findingId],

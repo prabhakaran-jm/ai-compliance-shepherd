@@ -740,7 +740,7 @@ def handler(event, context):
             return {
                 "statusCode": 200,
                 "headers": {
-                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Origin": "https://demo.cloudaimldevops.com",
                     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
                     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
                     "Access-Control-Max-Age": "86400"
@@ -761,7 +761,7 @@ def handler(event, context):
             return {
                 "statusCode": 500,
                 "headers": {
-                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Origin": "https://demo.cloudaimldevops.com",
                     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
                     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
                     "Access-Control-Max-Age": "86400"
@@ -773,6 +773,19 @@ def handler(event, context):
                     "timestamp": datetime.utcnow().isoformat()
                 })
             }
+    
+    # Handle OPTIONS requests for CORS preflight
+    if http_method == 'OPTIONS':
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "https://demo.cloudaimldevops.com",
+                "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+                "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+                "Access-Control-Max-Age": "86400"
+            },
+            "body": json.dumps({"message": "CORS preflight successful"})
+        }
     
     # Remediation action handlers for Step Functions workflow
     if 'action' in event:
@@ -1439,33 +1452,6 @@ def generate_ai_insights(findings, services):
     const corsHeaders = 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token';
     const corsMethods = 'GET,POST,OPTIONS';
 
-    // Create a simple CORS handler Lambda
-    const corsHandlerLambda = new cdk.aws_lambda.Function(this, 'CorsHandlerLambda', {
-      runtime: cdk.aws_lambda.Runtime.PYTHON_3_9,
-      handler: 'index.handler',
-      code: cdk.aws_lambda.Code.fromInline(`
-import json
-
-def handler(event, context):
-    # Always return CORS headers
-    cors_headers = {
-        'Access-Control-Allow-Origin': 'https://demo.cloudaimldevops.com',
-        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-        'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-        'Access-Control-Max-Age': '86400'
-    }
-    
-    return {
-        'statusCode': 200,
-        'headers': cors_headers,
-        'body': json.dumps({'message': 'CORS preflight successful'})
-    }
-`),
-      description: 'Simple CORS handler for OPTIONS requests'
-    });
-
-    const corsHandlerIntegration = new cdk.aws_apigateway.LambdaIntegration(corsHandlerLambda);
-
     // Lambda integration
     const lambdaIntegration = new cdk.aws_apigateway.LambdaIntegration(complianceScannerLambda);
 
@@ -1488,27 +1474,27 @@ def handler(event, context):
       authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
     });
 
-    // Add OPTIONS to root and each path using Lambda integration
-    api.root.addMethod('OPTIONS', corsHandlerIntegration, {
+    // Add OPTIONS methods that will be handled by the main Lambda function
+    api.root.addMethod('OPTIONS', lambdaIntegration, {
       authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
     });
-    scanRes.addMethod('OPTIONS', corsHandlerIntegration, {
+    scanRes.addMethod('OPTIONS', lambdaIntegration, {
       authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
     });
-    healthRes.addMethod('OPTIONS', corsHandlerIntegration, {
+    healthRes.addMethod('OPTIONS', lambdaIntegration, {
       authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
     });
-    agentRes.addMethod('OPTIONS', corsHandlerIntegration, {
+    agentRes.addMethod('OPTIONS', lambdaIntegration, {
       authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
     });
-    remediateRes.addMethod('OPTIONS', corsHandlerIntegration, {
+    remediateRes.addMethod('OPTIONS', lambdaIntegration, {
       authorizationType: cdk.aws_apigateway.AuthorizationType.NONE
     });
 
     // Explicit deployment and stage with dependencies on main methods only
     const deployment = new cdk.aws_apigateway.Deployment(this, 'ManualDeployment', {
       api,
-      description: 'v7' // bump to v7 for Lambda CORS fix
+      description: 'v8' // bump to v8 for unified Lambda CORS handling
     });
     // Depend on main methods only - MockIntegration OPTIONS don't need dependencies
     deployment.node.addDependency(scanPost, healthGet, agentPost, remediatePost);

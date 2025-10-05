@@ -322,9 +322,11 @@
 
         async function simulateComplianceScan() {
             updateResponse('Starting REAL AI Compliance Scan with Hybrid Mode...');
+            console.log('API_BASE:', API_BASE);
             
             try {
                 // Call API Gateway directly
+                console.log('Making API call to:', `${API_BASE}/scan`);
                 const response = await fetch(`${API_BASE}/scan`, {
                     method: 'POST',
                     headers: {
@@ -338,7 +340,15 @@
                     })
                 });
                 
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
+                console.log('Response data:', data);
                 
                 updateResponse(`REAL AI Agent Response:\n${JSON.stringify(data, null, 2)}`);
                 
@@ -348,6 +358,7 @@
                 }
                 
             } catch (error) {
+                console.error('API call failed:', error);
                 // Show success response instead of error
                 const successResponse = {
                     "message": "AI Compliance Scan Complete",

@@ -179,6 +179,21 @@ def handler(event, context):
             ec2_findings = scan_ec2_resources(regions)
             findings.extend(ec2_findings)
         
+        # Real RDS scanning
+        if 'rds' in services:
+            rds_findings = scan_rds_resources(regions)
+            findings.extend(rds_findings)
+        
+        # Real Lambda scanning
+        if 'lambda' in services:
+            lambda_findings = scan_lambda_resources(regions)
+            findings.extend(lambda_findings)
+        
+        # Real VPC scanning
+        if 'vpc' in services:
+            vpc_findings = scan_vpc_resources(regions)
+            findings.extend(vpc_findings)
+        
         # Publish custom metrics to CloudWatch
         publish_custom_metrics(findings, services)
         
@@ -523,6 +538,194 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
         print(f"Error in EC2 scanning: {str(e)}")
     
     return findings
+
+def scan_rds_resources(regions: List[str]) -> List[Dict[str, Any]]:
+    """Real RDS resource scanning"""
+    findings = []
+    
+    try:
+        for region in regions:
+            try:
+                rds_client = boto3.client('rds', region_name=region)
+                
+                # List RDS instances
+                response = rds_client.describe_db_instances()
+                
+                for db_instance in response['DBInstances']:
+                    db_id = db_instance['DBInstanceIdentifier']
+                    
+                    # Check encryption
+                    if not db_instance.get('StorageEncrypted', False):
+                        findings.append({
+                            "findingId": f"RDS-ENCRYPT-{db_id.replace('-', '').upper()}",
+                            "severity": "HIGH",
+                            "category": "Data Protection",
+                            "title": f"RDS Instance '{db_id}' Not Encrypted",
+                            "description": f"Real scan detected RDS instance '{db_id}' without encryption at rest",
+                            "resource": db_id,
+                            "recommendation": "Enable encryption at rest for RDS instance",
+                            "autoRemediable": False,
+                            "aiAnalysis": "Real AWS API scan identified unencrypted database",
+                            "complianceFrameworks": ["SOC2", "HIPAA", "PCI-DSS"],
+                            "estimatedCost": 4000,
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "scanSource": "real-aws-api"
+                        })
+                    
+                    # Check automated backups
+                    if not db_instance.get('BackupRetentionPeriod', 0) > 0:
+                        findings.append({
+                            "findingId": f"RDS-BACKUP-{db_id.replace('-', '').upper()}",
+                            "severity": "MEDIUM",
+                            "category": "Data Protection",
+                            "title": f"RDS Instance '{db_id}' Without Automated Backups",
+                            "description": f"Real scan detected RDS instance '{db_id}' without automated backups",
+                            "resource": db_id,
+                            "recommendation": "Enable automated backups for data protection",
+                            "autoRemediable": False,
+                            "aiAnalysis": "Real AWS API scan identified database without backups",
+                            "complianceFrameworks": ["SOC2", "HIPAA"],
+                            "estimatedCost": 2000,
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "scanSource": "real-aws-api"
+                        })
+                        
+            except Exception as e:
+                print(f"Error scanning RDS in region {region}: {str(e)}")
+                continue
+                
+    except Exception as e:
+        print(f"Error in RDS scanning: {str(e)}")
+    
+    return findings
+
+def scan_lambda_resources(regions: List[str]) -> List[Dict[str, Any]]:
+    """Real Lambda function scanning"""
+    findings = []
+    
+    try:
+        for region in regions:
+            try:
+                lambda_client = boto3.client('lambda', region_name=region)
+                
+                # List Lambda functions
+                paginator = lambda_client.get_paginator('list_functions')
+                
+                for page in paginator.paginate():
+                    for function in page['Functions']:
+                        func_name = function['FunctionName']
+                        
+                        # Check VPC configuration
+                        vpc_config = function.get('VpcConfig', {})
+                        if vpc_config.get('VpcId'):
+                            # Function is in VPC - check if it has proper VPC settings
+                            if not vpc_config.get('SubnetIds') or not vpc_config.get('SecurityGroupIds'):
+                                findings.append({
+                                    "findingId": f"LAMBDA-VPC-{func_name.replace('-', '').upper()}",
+                                    "severity": "MEDIUM",
+                                    "category": "Network Security",
+                                    "title": f"Lambda Function '{func_name}' VPC Configuration Issue",
+                                    "description": f"Real scan detected Lambda function '{func_name}' with incomplete VPC configuration",
+                                    "resource": func_name,
+                                    "recommendation": "Configure proper VPC settings for Lambda function",
+                                    "autoRemediable": False,
+                                    "aiAnalysis": "Real AWS API scan identified Lambda VPC misconfiguration",
+                                    "complianceFrameworks": ["SOC2", "CIS"],
+                                    "estimatedCost": 1000,
+                                    "timestamp": datetime.utcnow().isoformat(),
+                                    "scanSource": "real-aws-api"
+                                })
+                        
+                        # Check dead letter queue configuration
+                        if not function.get('DeadLetterConfig'):
+                            findings.append({
+                                "findingId": f"LAMBDA-DLQ-{func_name.replace('-', '').upper()}",
+                                "severity": "LOW",
+                                "category": "Reliability",
+                                "title": f"Lambda Function '{func_name}' Without Dead Letter Queue",
+                                "description": f"Real scan detected Lambda function '{func_name}' without dead letter queue configuration",
+                                "resource": func_name,
+                                "recommendation": "Configure dead letter queue for error handling",
+                                "autoRemediable": False,
+                                "aiAnalysis": "Real AWS API scan identified Lambda without DLQ",
+                                "complianceFrameworks": ["SOC2"],
+                                "estimatedCost": 500,
+                                "timestamp": datetime.utcnow().isoformat(),
+                                "scanSource": "real-aws-api"
+                            })
+                            
+            except Exception as e:
+                print(f"Error scanning Lambda in region {region}: {str(e)}")
+                continue
+                
+    except Exception as e:
+        print(f"Error in Lambda scanning: {str(e)}")
+    
+    return findings
+
+def scan_vpc_resources(regions: List[str]) -> List[Dict[str, Any]]:
+    """Real VPC resource scanning"""
+    findings = []
+    
+    try:
+        for region in regions:
+            try:
+                ec2_client = boto3.client('ec2', region_name=region)
+                
+                # List VPCs
+                response = ec2_client.describe_vpcs()
+                
+                for vpc in response['Vpcs']:
+                    vpc_id = vpc['VpcId']
+                    
+                    # Check VPC flow logs
+                    flow_logs = ec2_client.describe_flow_logs(Filters=[
+                        {'Name': 'resource-id', 'Values': [vpc_id]}
+                    ])
+                    
+                    if not flow_logs['FlowLogs']:
+                        findings.append({
+                            "findingId": f"VPC-FLOWLOGS-{vpc_id.replace('-', '').upper()}",
+                            "severity": "MEDIUM",
+                            "category": "Monitoring",
+                            "title": f"VPC '{vpc_id}' Without Flow Logs",
+                            "description": f"Real scan detected VPC '{vpc_id}' without flow logs enabled",
+                            "resource": vpc_id,
+                            "recommendation": "Enable VPC flow logs for network monitoring",
+                            "autoRemediable": False,
+                            "aiAnalysis": "Real AWS API scan identified VPC without flow logs",
+                            "complianceFrameworks": ["SOC2", "CIS"],
+                            "estimatedCost": 1500,
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "scanSource": "real-aws-api"
+                        })
+                    
+                    # Check DNS resolution
+                    if not vpc.get('EnableDnsHostnames', False):
+                        findings.append({
+                            "findingId": f"VPC-DNS-{vpc_id.replace('-', '').upper()}",
+                            "severity": "LOW",
+                            "category": "Network Configuration",
+                            "title": f"VPC '{vpc_id}' DNS Hostnames Disabled",
+                            "description": f"Real scan detected VPC '{vpc_id}' with DNS hostnames disabled",
+                            "resource": vpc_id,
+                            "recommendation": "Enable DNS hostnames for VPC",
+                            "autoRemediable": False,
+                            "aiAnalysis": "Real AWS API scan identified VPC DNS configuration issue",
+                            "complianceFrameworks": ["SOC2"],
+                            "estimatedCost": 500,
+                            "timestamp": datetime.utcnow().isoformat(),
+                            "scanSource": "real-aws-api"
+                        })
+                        
+            except Exception as e:
+                print(f"Error scanning VPC in region {region}: {str(e)}")
+                continue
+                
+    except Exception as e:
+        print(f"Error in VPC scanning: {str(e)}")
+    
+    return findings
 `),
       description: 'Real AWS Resource Scanner for Compliance Analysis',
       timeout: cdk.Duration.minutes(10),
@@ -549,6 +752,11 @@ def scan_ec2_resources(regions: List[str]) -> List[Dict[str, Any]]:
         'iam:ListRolePolicies',
         'ec2:DescribeInstances',
         'ec2:DescribeSecurityGroups',
+        'ec2:DescribeVpcs',
+        'ec2:DescribeFlowLogs',
+        'rds:DescribeDBInstances',
+        'lambda:ListFunctions',
+        'lambda:GetFunction',
         'bedrock:InvokeModel',
         'bedrock:InvokeModelWithResponseStream'
       ],
@@ -722,6 +930,27 @@ def handler(event, context):
                 "Ensure EC2 instances use proper AMIs",
                 "Enable EC2 detailed monitoring",
                 "Configure EC2 instance metadata service v2"
+            ])
+        if 'rds' in services:
+            recommended_actions.extend([
+                "Enable RDS encryption at rest",
+                "Configure RDS automated backups",
+                "Enable RDS performance insights",
+                "Review RDS security group configurations"
+            ])
+        if 'lambda' in services:
+            recommended_actions.extend([
+                "Enable Lambda function logging",
+                "Configure Lambda VPC settings",
+                "Review Lambda execution roles",
+                "Enable Lambda dead letter queues"
+            ])
+        if 'vpc' in services:
+            recommended_actions.extend([
+                "Review VPC flow logs configuration",
+                "Check VPC endpoint configurations",
+                "Audit VPC security group rules",
+                "Enable VPC DNS resolution"
             ])
         
         # Remove duplicates while preserving order

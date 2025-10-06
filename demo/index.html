@@ -1546,6 +1546,75 @@
             }
         }
 
+        async function performRDSScanForChat() {
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scanType: 'general',
+                        regions: ['us-east-1'],
+                        services: ['rds'],
+                        useRealScanning: true
+                    })
+                });
+                
+                const data = await response.json();
+                displayScanResultsInChat(data, 'RDS Compliance Scan Results');
+                
+            } catch (error) {
+                addMessageToChat(`❌ RDS Scan Failed: ${error.message}`, 'bot');
+            }
+        }
+
+        async function performLambdaScanForChat() {
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scanType: 'general',
+                        regions: ['us-east-1'],
+                        services: ['lambda'],
+                        useRealScanning: true
+                    })
+                });
+                
+                const data = await response.json();
+                displayScanResultsInChat(data, 'Lambda Compliance Scan Results');
+                
+            } catch (error) {
+                addMessageToChat(`❌ Lambda Scan Failed: ${error.message}`, 'bot');
+            }
+        }
+
+        async function performVPCScanForChat() {
+            try {
+                const response = await fetch(`${API_BASE}/scan`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        scanType: 'general',
+                        regions: ['us-east-1'],
+                        services: ['vpc'],
+                        useRealScanning: true
+                    })
+                });
+                
+                const data = await response.json();
+                displayScanResultsInChat(data, 'VPC Compliance Scan Results');
+                
+            } catch (error) {
+                addMessageToChat(`❌ VPC Scan Failed: ${error.message}`, 'bot');
+            }
+        }
+
         async function performFullScanForChat() {
             try {
                 const response = await fetch(`${API_BASE}/scan`, {
@@ -1641,8 +1710,38 @@
             addMessageToChat(html, 'bot');
         }
 
+        // Conversation memory and context tracking
+        let conversationContext = {
+            lastIntent: null,
+            pendingAction: null,
+            userResponses: [],
+            conversationHistory: [],
+            currentTopic: null
+        };
+
         function generateAIResponse(userMessage) {
             const message = userMessage.toLowerCase();
+            
+            // Store conversation history
+            conversationContext.conversationHistory.push({
+                user: userMessage,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Detect conversation endings
+            if (isFarewellMessage(message)) {
+                conversationContext.lastIntent = 'farewell';
+                return generateFarewellResponse();
+            }
+            
+            // Handle context-aware responses
+            if (conversationContext.pendingAction) {
+                return handleContextualResponse(message);
+            }
+            
+            // Detect intent
+            const intent = detectIntent(message);
+            conversationContext.lastIntent = intent;
             
             // AI responses based on user input
             if (message.includes('scan') && message.includes('s3') && (message.includes('bucket') || message.includes('storage'))) {
@@ -1663,6 +1762,24 @@
                     await performEC2ScanForChat();
                 }, 1000);
                 return `🔍 **Starting EC2 Compliance Scan**\n\nAnalyzing your EC2 instances for:\n• 🛡️ Security group configurations\n• 🔐 Instance compliance\n• 🌐 Network access patterns\n• 📊 Resource utilization\n\nScanning in progress...`;
+            } else if (message.includes('scan') && message.includes('rds')) {
+                // Trigger RDS-only scan when user specifically asks for RDS scan
+                setTimeout(async () => {
+                    await performRDSScanForChat();
+                }, 1000);
+                return `🔍 **Starting RDS Compliance Scan**\n\nAnalyzing your RDS instances for:\n• 🔒 Encryption at rest\n• 📋 Automated backups\n• 🛡️ Security group configurations\n• 📊 Performance insights\n\nScanning in progress...`;
+            } else if (message.includes('scan') && message.includes('lambda')) {
+                // Trigger Lambda-only scan when user specifically asks for Lambda scan
+                setTimeout(async () => {
+                    await performLambdaScanForChat();
+                }, 1000);
+                return `🔍 **Starting Lambda Compliance Scan**\n\nAnalyzing your Lambda functions for:\n• 🌐 VPC configuration\n• 📋 Dead letter queue setup\n• 🔐 Execution role permissions\n• 📊 Function logging\n\nScanning in progress...`;
+            } else if (message.includes('scan') && message.includes('vpc')) {
+                // Trigger VPC-only scan when user specifically asks for VPC scan
+                setTimeout(async () => {
+                    await performVPCScanForChat();
+                }, 1000);
+                return `🔍 **Starting VPC Compliance Scan**\n\nAnalyzing your VPCs for:\n• 📋 Flow logs configuration\n• 🌐 DNS resolution settings\n• 🛡️ Security group rules\n• 📊 Network monitoring\n\nScanning in progress...`;
             } else if (message.includes('start') && (message.includes('scan') || message.includes('compliance')) && !message.includes('s3') && !message.includes('iam') && !message.includes('ec2')) {
                 // Trigger full scan when user says "start compliance scan" (not service-specific)
                 setTimeout(async () => {
@@ -1676,6 +1793,7 @@
             } else if (message.includes('iam') || message.includes('permission')) {
                 return `IAM compliance is essential for security! I can analyze your IAM setup for:\n\n👤 **User Management**: MFA requirements, unused accounts\n🔑 **Role Permissions**: Principle of least privilege violations\n📋 **Policy Analysis**: Overly broad permissions and policies\n🔍 **Access Patterns**: Unusual or excessive access patterns\n\n**To start an IAM scan, say:** "Check my IAM permissions" or "Scan my IAM roles"`;
             } else if (message.includes('cost') || message.includes('saving')) {
+                conversationContext.pendingAction = 'cost_optimization_confirmation';
                 return `Excellent! I can help optimize your AWS costs while maintaining compliance. My analysis shows potential savings of $100K+ annually through:\n\n💰 **Resource Optimization**: Right-sizing instances and storage\n🔄 **Lifecycle Management**: Automated data archiving and deletion\n📊 **Usage Analysis**: Identifying unused or underutilized resources\n🛡️ **Compliance-Driven Savings**: Avoiding penalties and fines\n\nWould you like a comprehensive cost optimization report?`;
             } else if (message.includes('security') || message.includes('best practice')) {
                 return `I'm here to help with AWS security best practices! Here are the latest recommendations:\n\n🔐 **Access Control**: Enable MFA, implement least privilege\n🛡️ **Data Protection**: Encrypt data at rest and in transit\n📝 **Monitoring**: Enable CloudTrail, CloudWatch, and GuardDuty\n🔍 **Compliance**: Regular audits and automated remediation\n\nI can scan your environment and provide specific recommendations. What security area would you like me to focus on?`;
@@ -1688,10 +1806,102 @@
                 }, 1000);
                 return `Perfect! I'm starting a comprehensive compliance scan of your AWS infrastructure. This will analyze your S3 buckets, IAM policies, and EC2 instances for security and compliance issues. Please check the API Demo section for the scan results!`;
             } else if (message.includes('yes')) {
+                conversationContext.pendingAction = 'scan_confirmation';
                 return `Great! I'm ready to help. What specific compliance task would you like me to perform? I can:\n\n• Scan your infrastructure\n• Analyze security configurations\n• Provide cost optimization recommendations\n• Check specific AWS services\n\nJust tell me what you'd like me to do!`;
+            } else if (message.includes('ecs') || message.includes('rds') || message.includes('lambda') || message.includes('vpc')) {
+                // Handle unsupported services gracefully
+                const service = message.match(/(ecs|rds|lambda|vpc|cloudfront|route53)/i)?.[0] || 'this service';
+                return getUnsupportedServiceResponse(service);
             } else {
-                return `I understand you're asking about "${userMessage}". As your AI Compliance Shepherd, I can help with:\n\n🔍 **Infrastructure Scanning**: Analyze S3, IAM, EC2, and other AWS services\n🛡️ **Security Compliance**: SOC2, HIPAA, PCI-DSS, and other frameworks\n💰 **Cost Optimization**: Identify savings and efficiency opportunities\n🔧 **Auto-Remediation**: Fix common compliance issues automatically\n\n**Try asking:**\n• "Scan my S3 buckets for compliance issues"\n• "Check my IAM permissions"\n• "Start a full compliance scan"\n• "Show me cost savings"\n\nWhat would you like me to help you with?`;
+                // Generate varied responses to avoid repetition
+                const responses = [
+                    `I understand you're asking about "${userMessage}". As your AI Compliance Shepherd, I can help with:\n\n🔍 **Infrastructure Scanning**: Analyze S3, IAM, EC2, and other AWS services\n🛡️ **Security Compliance**: SOC2, HIPAA, PCI-DSS, and other frameworks\n💰 **Cost Optimization**: Identify savings and efficiency opportunities\n🔧 **Auto-Remediation**: Fix common compliance issues automatically\n\n**Try asking:**\n• "Scan my S3 buckets for compliance issues"\n• "Check my IAM permissions"\n• "Start a full compliance scan"\n• "Show me cost savings"\n\nWhat would you like me to help you with?`,
+                    `I'm here to help with AWS compliance! I can assist you with:\n\n🔍 **Real-time Scanning**: S3, IAM, EC2 resource analysis\n🛡️ **Security Assessment**: Compliance framework validation\n💰 **Cost Analysis**: Identify optimization opportunities\n🔧 **Automated Fixes**: One-click remediation for common issues\n\n**Popular commands:**\n• "Scan my S3 buckets for compliance issues"\n• "Check my IAM permissions"\n• "Start a full compliance scan"\n• "Show me cost savings"\n\nWhat can I help you with today?`,
+                    `I'm your AI Compliance Shepherd! I specialize in:\n\n🔍 **AWS Resource Scanning**: Real-time compliance analysis\n🛡️ **Security Compliance**: SOC2, CIS, HIPAA frameworks\n💰 **Cost Optimization**: Identify savings opportunities\n🔧 **Auto-Remediation**: Fix compliance issues automatically\n\n**Quick actions:**\n• "Scan my S3 buckets for compliance issues"\n• "Check my IAM permissions"\n• "Start a full compliance scan"\n• "Show me cost savings"\n\nHow can I assist you today?`
+                ];
+                return responses[Math.floor(Math.random() * responses.length)];
             }
+        }
+
+        // Helper functions for conversation management
+        function isFarewellMessage(message) {
+            const farewellKeywords = ['bye', 'goodbye', 'thanks', 'thank you', 'see you', 'farewell', 'exit', 'quit'];
+            return farewellKeywords.some(keyword => message.includes(keyword));
+        }
+
+        function generateFarewellResponse() {
+            const responses = [
+                "Thank you for using AI Compliance Shepherd! Feel free to come back anytime for compliance assistance. 👋",
+                "Goodbye! Your AWS infrastructure is in good hands. Stay compliant! 🛡️",
+                "Thanks for chatting! Remember to run regular compliance scans. See you next time! 👋",
+                "Farewell! Keep your AWS environment secure and compliant. Until next time! 🚀"
+            ];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        function detectIntent(message) {
+            if (message.includes('scan') || message.includes('check') || message.includes('analyze')) {
+                return 'scan_request';
+            } else if (message.includes('cost') || message.includes('saving') || message.includes('optimize')) {
+                return 'cost_optimization';
+            } else if (message.includes('security') || message.includes('compliance') || message.includes('best practice')) {
+                return 'security_advice';
+            } else if (message.includes('help') || message.includes('what can you do')) {
+                return 'help_request';
+            } else if (message.includes('yes') || message.includes('sure') || message.includes('okay')) {
+                return 'confirmation';
+            } else if (message.includes('no') || message.includes('not') || message.includes('skip')) {
+                return 'rejection';
+            } else {
+                return 'general_query';
+            }
+        }
+
+        function handleContextualResponse(message) {
+            const pendingAction = conversationContext.pendingAction;
+            
+            if (pendingAction === 'cost_optimization_confirmation') {
+                if (message.includes('yes') || message.includes('sure') || message.includes('okay')) {
+                    conversationContext.pendingAction = null;
+                    conversationContext.currentTopic = 'cost_optimization';
+                    return generateCostOptimizationReport();
+                } else {
+                    conversationContext.pendingAction = null;
+                    return "No problem! I'm here whenever you need cost optimization help. What else can I assist you with?";
+                }
+            }
+            
+            if (pendingAction === 'scan_confirmation') {
+                if (message.includes('yes') || message.includes('sure') || message.includes('okay')) {
+                    conversationContext.pendingAction = null;
+                    conversationContext.currentTopic = 'scanning';
+                    setTimeout(() => {
+                        simulateComplianceScan();
+                    }, 1000);
+                    return "Perfect! I'm starting a comprehensive compliance scan of your AWS infrastructure. This will analyze your S3 buckets, IAM policies, and EC2 instances for security and compliance issues. Please check the API Demo section for the scan results!";
+                } else {
+                    conversationContext.pendingAction = null;
+                    return "No problem! I'm here whenever you need compliance scanning. What else can I help you with?";
+                }
+            }
+            
+            // Clear pending action if not handled
+            conversationContext.pendingAction = null;
+            return generateAIResponse(message);
+        }
+
+        function generateCostOptimizationReport() {
+            return `💰 **Comprehensive Cost Optimization Report**\n\nBased on your AWS environment analysis:\n\n📊 **Current Findings:**\n• Unused S3 storage: $2,400/year potential savings\n• Over-provisioned EC2 instances: $3,200/year savings\n• Idle RDS instances: $1,800/year savings\n• Unused EBS volumes: $900/year savings\n\n🎯 **Total Potential Annual Savings: $8,300**\n\n🔧 **Recommended Actions:**\n• Enable S3 lifecycle policies for automatic archiving\n• Right-size EC2 instances based on actual usage\n• Schedule RDS instances for non-production hours\n• Delete unused EBS volumes and snapshots\n• Implement automated cost monitoring alerts\n\nWould you like me to help implement any of these optimizations?`;
+        }
+
+        // Enhanced service support
+        function isSupportedService(message) {
+            const supportedServices = ['s3', 'iam', 'ec2', 'rds', 'lambda', 'vpc', 'cloudfront', 'route53'];
+            return supportedServices.some(service => message.toLowerCase().includes(service));
+        }
+
+        function getUnsupportedServiceResponse(service) {
+            return `I understand you'd like to check ${service.toUpperCase()}. While I currently focus on S3, IAM, and EC2 compliance scanning, I'm constantly expanding my capabilities!\n\n🔧 **Currently Supported Services:**\n• S3 Buckets (encryption, public access, versioning)\n• IAM Roles & Policies (permissions, access controls)\n• EC2 Instances (security groups, configurations)\n\n🚀 **Coming Soon:**\n• RDS Database compliance\n• Lambda function security\n• VPC network analysis\n• CloudFront CDN optimization\n\nFor now, I can help you with the core AWS services. Would you like me to scan your S3, IAM, or EC2 resources?`;
         }
 
         // Set API URL dynamically

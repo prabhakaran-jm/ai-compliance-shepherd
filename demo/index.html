@@ -1199,11 +1199,10 @@
                         
                         const poll = async () => {
                             const statusResult = await checkExecutionStatus(remediationResult.executionArn);
-                            const body = JSON.parse(statusResult.body)
-                            if (body.status === 'SUCCEEDED') {
+                            if (statusResult.status === 'SUCCEEDED') {
                                 updateRemediationItem(i, 'completed');
                                 updateResponse(`✅ Remediation completed successfully for: ${finding.title}`);
-                            } else if (body.status === 'FAILED') {
+                            } else if (statusResult.status === 'FAILED') {
                                 updateRemediationItem(i, 'failed');
                                 updateResponse(`❌ Remediation failed for: ${finding.title}`);
                             } else {

@@ -766,9 +766,13 @@ def handler(event, context):
     if path == '/remediate' and http_method == 'POST':
         try:
             body = json.loads(event.get('body', '{}'))
-            findings_to_remediate = body.get('findings', [])
+            parameters = body.get('parameters', {})
+            findings_to_remediate = parameters.get('findings', [])
             tenant_id = body.get('tenantId', 'demo-tenant')
-            dry_run = body.get('dryRun', False)
+            dry_run = parameters.get('dryRun', False)
+            
+            print(f"DEBUG: Received remediation request with {len(findings_to_remediate)} findings")
+            print(f"DEBUG: Findings: {findings_to_remediate}")
             
             remediation_result = trigger_remediation_workflow(findings_to_remediate, tenant_id, dry_run)
             
@@ -778,6 +782,7 @@ def handler(event, context):
                 "body": json.dumps(remediation_result)
             }
         except Exception as e:
+            print(f"ERROR in /remediate endpoint: {str(e)}")
             return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
     
     # Remediation status endpoint

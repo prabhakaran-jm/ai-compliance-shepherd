@@ -780,6 +780,40 @@ def handler(event, context):
         except Exception as e:
             return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
     
+    # Remediation status endpoint
+    if path == '/remediation-status' and http_method == 'POST':
+        try:
+            body = json.loads(event.get('body', '{}'))
+            execution_arn = body.get('executionArn')
+            
+            if not execution_arn:
+                return {
+                    "statusCode": 400,
+                    "headers": {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://demo.cloudaimldevops.com'},
+                    "body": json.dumps({"error": "executionArn is required"})
+                }
+            
+            # Check Step Functions execution status
+            stepfunctions_client = boto3.client('stepfunctions')
+            response = stepfunctions_client.describe_execution(executionArn=execution_arn)
+            
+            return {
+                "statusCode": 200,
+                "headers": {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://demo.cloudaimldevops.com'},
+                "body": json.dumps({
+                    "status": response['status'],
+                    "startDate": response['startDate'].isoformat() if 'startDate' in response else None,
+                    "stopDate": response['stopDate'].isoformat() if 'stopDate' in response else None,
+                    "output": response.get('output', '{}')
+                })
+            }
+        except Exception as e:
+            return {
+                "statusCode": 500,
+                "headers": {'Content-Type': 'application/json', 'Access-Control-Allow-Origin': 'https://demo.cloudaimldevops.com'},
+                "body": json.dumps({"error": str(e)})
+            }
+    
     
     # Remediation action handlers for Step Functions workflow
     if 'action' in event:

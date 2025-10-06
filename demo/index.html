@@ -1202,6 +1202,13 @@
                             if (statusResult.status === 'SUCCEEDED') {
                                 updateRemediationItem(i, 'completed');
                                 updateResponse(`✅ Remediation completed successfully for: ${finding.title}`);
+                                
+                                // Check if this was the last remediation
+                                const allCompleted = document.querySelectorAll('.remediation-item').length === 
+                                    document.querySelectorAll('.remediation-item.completed').length;
+                                if (allCompleted) {
+                                    updateResponse('🎉 Auto-Remediation process completed!');
+                                }
                             } else if (statusResult.status === 'FAILED') {
                                 updateRemediationItem(i, 'failed');
                                 updateResponse(`❌ Remediation failed for: ${finding.title}`);
@@ -1223,8 +1230,6 @@
                 
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
-
-            updateResponse('🎉 Auto-Remediation process completed!');
         }
 
         async function checkExecutionStatus(executionArn) {

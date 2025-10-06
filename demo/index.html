@@ -1259,6 +1259,20 @@
         async function performRemediation(finding) {
             try {
                 console.log('Attempting remediation for finding:', finding);
+                console.log('Finding type:', typeof finding);
+                console.log('Finding keys:', finding ? Object.keys(finding) : 'finding is null/undefined');
+                
+                const requestBody = {
+                    tenantId: 'demo-tenant',
+                    parameters: {
+                        findings: [finding],
+                        approvalRequired: false, // Set to true for production
+                        dryRun: false // Set to true for testing
+                    },
+                    startedBy: 'ai-compliance-shepherd-ui'
+                };
+                
+                console.log('Request body being sent:', JSON.stringify(requestBody, null, 2));
                 
                 // Call remediation API endpoint
                 const response = await fetch(`${API_BASE}/remediate`, {
@@ -1267,15 +1281,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        tenantId: 'demo-tenant',
-                        parameters: {
-                            findings: [finding],
-                            approvalRequired: false, // Set to true for production
-                            dryRun: false // Set to true for testing
-                        },
-                        startedBy: 'ai-compliance-shepherd-ui'
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 console.log('Remediation API response status:', response.status);

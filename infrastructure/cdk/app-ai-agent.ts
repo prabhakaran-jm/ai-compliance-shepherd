@@ -772,7 +772,7 @@ def handler(event, context):
             dry_run = parameters.get('dryRun', False)
             
             print(f"DEBUG: Received remediation request with {len(findings_to_remediate)} findings")
-            print(f"DEBUG: Findings: {findings_to_remediate}")
+            # print(f"DEBUG: Findings: {findings_to_remediate}")  # Commented out for production
             
             remediation_result = trigger_remediation_workflow(findings_to_remediate, tenant_id, dry_run)
             

@@ -1247,7 +1247,7 @@ def generate_ai_insights(findings, services):
     const remediationStateMachine = new cdk.aws_stepfunctions.StateMachine(this, 'RemediationWorkflow', {
       stateMachineName: 'RemediationWorkflow',
       definitionBody: cdk.aws_stepfunctions.DefinitionBody.fromString(JSON.stringify({
-        "Comment": "AI Compliance Shepherd Remediation Workflow",
+        "Comment": "AI Compliance Shepherd Remediation Workflow - Fixed JSONPath and Map Iterator",
         "StartAt": "InitializeRemediation",
         "States": {
           "InitializeRemediation": {
@@ -1260,58 +1260,12 @@ def generate_ai_insights(findings, services):
                 "findings.$": "$.parameters.findings",
                 "tenantId.$": "$.tenantId",
                 "correlationId.$": "$$.Execution.Name",
-                "dryRun.$": "$.parameters.dryRun",
-                "approvalRequired.$": "$.parameters.approvalRequired"
+                "dryRun.$": "$.parameters.dryRun"
               }
             },
             "ResultPath": "$.remediationJob",
-            "Next": "CheckApprovalRequired"
-          },
-          "CheckApprovalRequired": {
-            "Type": "Choice",
-            "Choices": [
-              {
-                "Variable": "$.parameters.approvalRequired",
-                "BooleanEquals": true,
-                "Next": "WaitForApproval"
-              }
-            ],
-            "Default": "ApplyRemediations"
-          },
-          "WaitForApproval": {
-            "Type": "Wait",
-            "Seconds": 300,
-            "Next": "CheckApprovalStatus"
-          },
-          "CheckApprovalStatus": {
-            "Type": "Task",
-            "Resource": "arn:aws:states:::lambda:invoke",
-            "Parameters": {
-              "FunctionName": complianceScannerLambda.functionArn,
-              "Payload": {
-                "action": "checkApproval",
-                "remediationJobId.$": "$.remediationJob.remediationJobId",
-                "tenantId.$": "$.tenantId",
-                "correlationId.$": "$$.Execution.Name"
-              }
-            },
-            "Next": "EvaluateApproval"
-          },
-          "EvaluateApproval": {
-            "Type": "Choice",
-            "Choices": [
-              {
-                "Variable": "$.approvalStatus",
-                "StringEquals": "APPROVED",
-                "Next": "ApplyRemediations"
-              },
-              {
-                "Variable": "$.approvalStatus",
-                "StringEquals": "REJECTED",
-                "Next": "RemediationRejected"
-              }
-            ],
-            "Default": "WaitForApproval"
+            "OutputPath": "$",
+            "Next": "ApplyRemediations"
           },
           "ApplyRemediations": {
             "Type": "Map",
@@ -1319,7 +1273,6 @@ def generate_ai_insights(findings, services):
             "Parameters": {
               "finding.$": "$$.Map.Item.Value",
               "tenantId.$": "$.tenantId",
-              "correlationId.$": "$$.Execution.Name",
               "dryRun.$": "$.parameters.dryRun"
             },
             "MaxConcurrency": 5,
@@ -1335,14 +1288,14 @@ def generate_ai_insights(findings, services):
                       "action": "remediateFinding",
                       "finding.$": "$.finding",
                       "tenantId.$": "$.tenantId",
-                      "correlationId.$": "$.correlationId",
                       "dryRun.$": "$.dryRun"
                     }
                   },
                   "ResultPath": "$.remediationResult",
+                  "OutputPath": "$.remediationResult",
                   "Retry": [
                     {
-                      "ErrorEquals": ["States.ALL"],
+                      "ErrorEquals": ["States.TaskFailed", "Lambda.ServiceException", "Lambda.SdkClientException"],
                       "IntervalSeconds": 2,
                       "MaxAttempts": 3,
                       "BackoffRate": 2.0
@@ -1359,7 +1312,11 @@ def generate_ai_insights(findings, services):
                 },
                 "RemediationFailed": {
                   "Type": "Pass",
-                  "Result": "Remediation failed",
+                  "Parameters": {
+                    "status": "FAILED",
+                    "findingId.$": "$.finding.findingId",
+                    "error.$": "$.error"
+                  },
                   "End": true
                 }
               }
@@ -1375,20 +1332,22 @@ def generate_ai_insights(findings, services):
               "Payload": {
                 "action": "validateRemediationResults",
                 "tenantId.$": "$.tenantId",
-                "correlationId.$": "$.correlationId",
+                "correlationId.$": "$$.Execution.Name",
                 "remediationResults.$": "$.remediationResults"
               }
             },
+            "ResultPath": "$.validationResult",
             "Next": "RemediationComplete"
           },
           "RemediationComplete": {
             "Type": "Pass",
-            "Result": "Remediation workflow completed successfully",
-            "End": true
-          },
-          "RemediationRejected": {
-            "Type": "Pass",
-            "Result": "Remediation workflow rejected",
+            "Parameters": {
+              "status": "COMPLETED",
+              "message": "Remediation workflow completed successfully",
+              "tenantId.$": "$.tenantId",
+              "remediationResults.$": "$.remediationResults",
+              "validationResult.$": "$.validationResult.Payload"
+            },
             "End": true
           }
         }

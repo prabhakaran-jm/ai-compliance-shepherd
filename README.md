@@ -146,29 +146,169 @@ ai-compliance-shepherd/
 
 ### **Prerequisites**
 - **Node.js** >= 18.0.0
+- **npm** >= 7.0.0 (for workspace support)
 - **AWS CLI** configured with admin permissions
 - **AWS CDK CLI** installed globally
 - **Docker** (for LocalStack testing)
 
+> **⚠️ Note**: This project uses npm workspaces with `workspace:*` dependencies. If you encounter installation issues, use the installation scripts provided below.
+
 ### **Installation**
+
+> **🚀 Quick Start**: Just want to see the demo? Run `node demo/server.js` after cloning!
+
+| Installation Type | Time | Use Case | Command |
+|------------------|------|----------|---------|
+| **Demo Only** | 30 seconds | Quick testing, hackathon judges | `node demo/server.js` |
+| **Automated Script** | 2-3 minutes | Full development setup | `./scripts/install.sh` |
+| **Manual** | 5-10 minutes | Custom configuration | Follow Option 2 steps |
+| **Infrastructure Only** | 1-2 minutes | AWS deployment only | `cd infrastructure/cdk && npm install` |
+
+**Option 1: Automated Installation Script (Recommended)**
 
 ```bash
 # Clone the repository
 git clone https://github.com/prabhakaran-jm/ai-compliance-shepherd.git
 cd ai-compliance-shepherd
 
-# Install dependencies
+# Run installation script
+# For Linux/Mac:
+chmod +x scripts/install.sh
+./scripts/install.sh
+
+# For Windows:
+scripts\install.bat
+```
+
+**Option 2: Manual Installation**
+
+```bash
+# Clone the repository
+git clone https://github.com/prabhakaran-jm/ai-compliance-shepherd.git
+cd ai-compliance-shepherd
+
+# Install root dependencies first
+npm install --no-workspaces
+
+# Install shared dependencies
+cd shared && npm install && cd ..
+
+# Install service dependencies individually
+cd services/bedrock-agent && npm install && cd ../..
+cd services/bedrock-knowledge-base && npm install && cd ../..
+cd services/scan-environment && npm install && cd ../..
+cd services/apply-fix && npm install && cd ../..
+cd services/api-gateway && npm install && cd ../..
+
+# Install infrastructure dependencies
+cd infrastructure/cdk && npm install && cd ../..
+
+# Install testing dependencies
+cd testing && npm install && cd ..
+```
+
+**Option 3: Demo-Only Installation (Quickest)**
+
+```bash
+# Clone the repository
+git clone https://github.com/prabhakaran-jm/ai-compliance-shepherd.git
+cd ai-compliance-shepherd
+
+# Start the demo server directly (no npm install needed)
+npm run demo:start
+
+# Or run the demo server manually:
+node demo/server.js
+```
+
+**Option 4: Infrastructure-Only Installation**
+
+```bash
+# Clone and install infrastructure dependencies only
+git clone https://github.com/prabhakaran-jm/ai-compliance-shepherd.git
+cd ai-compliance-shepherd/infrastructure/cdk
 npm install
 
-# Deploy complete infrastructure
+# Deploy infrastructure
 npm run deploy
-
-# Generate demo data
-npm run demo:data
-
-# Run comprehensive tests
-npm test
 ```
+
+### **Alternative Installation (if workspace issues persist)**
+
+```bash
+# Install dependencies for each service individually
+npm install --workspaces=false
+
+# Install root dependencies
+npm install
+
+# Install shared dependencies first
+cd shared && npm install && cd ..
+
+# Install service dependencies
+for dir in services/*/; do
+  cd "$dir" && npm install && cd ../..
+done
+
+# Install infrastructure dependencies
+cd infrastructure/cdk && npm install && cd ../..
+
+# Install testing dependencies
+cd testing && npm install && cd ..
+```
+
+### **Troubleshooting Installation Issues**
+
+**Common Issues and Solutions:**
+
+1. **"Unsupported URL Type workspace:" Error**
+   ```bash
+   # Solution 1: Use the automated installation script
+   ./scripts/install.sh
+   
+   # Solution 2: Use legacy peer deps
+   npm install --legacy-peer-deps
+   
+   # Solution 3: Install individually
+   npm install --workspaces=false
+   ```
+
+2. **Node.js Version Issues**
+   ```bash
+   # Check your Node.js version
+   node --version
+   
+   # Should be >= 18.0.0
+   # If not, update Node.js from https://nodejs.org
+   ```
+
+3. **npm Version Issues**
+   ```bash
+   # Check npm version
+   npm --version
+   
+   # Should be >= 7.0.0
+   # Update npm if needed
+   npm install -g npm@latest
+   ```
+
+4. **Permission Issues (Windows)**
+   ```bash
+   # Run as Administrator or use:
+   npm install --no-optional
+   ```
+
+5. **Clean Installation**
+   ```bash
+   # Remove node_modules and package-lock.json
+   rm -rf node_modules package-lock.json
+   
+   # Clear npm cache
+   npm cache clean --force
+   
+   # Reinstall
+   npm install
+   ```
 
 ### **Access the Platform**
 🌐 **Live Demo**: Deployed on AWS Amplify with HTTPS  

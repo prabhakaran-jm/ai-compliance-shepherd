@@ -4,6 +4,10 @@ Essential scripts for demo resources, testing, and validation of the AI Complian
 
 ## 📁 Files
 
+### Installation Scripts
+- **`install.sh`** - Automated installation script for Linux/macOS/WSL
+- **`install.bat`** - Automated installation script for Windows
+
 ### Demo Resources
 - **`create-demo-resources.sh`** - Bash script for Linux/macOS/WSL
 - **`create-demo-resources.ps1`** - PowerShell script for Windows
@@ -17,6 +21,16 @@ Essential scripts for demo resources, testing, and validation of the AI Complian
 - **`quick-demo.js`** - Quick demo script for testing the platform
 
 ## 🚀 Quick Start
+
+### Installation Scripts
+```bash
+# Linux/macOS/WSL
+chmod +x scripts/install.sh
+./scripts/install.sh
+
+# Windows
+scripts\install.bat
+```
 
 ### Demo Resources
 ```bash

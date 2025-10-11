@@ -59,21 +59,69 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Compression and parsing
+// Compression and parsing with security limits
 app.use(compression());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Rate limiting
+// Request size limits for security
+const requestSizeLimit = process.env.REQUEST_SIZE_LIMIT || '1mb';
+app.use(express.json({ 
+  limit: requestSizeLimit,
+  verify: (req, res, buf) => {
+    // Log large requests for monitoring
+    if (buf.length > 500 * 1024) { // 500KB threshold
+      console.warn('Large request received', {
+        size: buf.length,
+        path: req.path,
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+    }
+    
+    // Prevent extremely large requests
+    if (buf.length > 10 * 1024 * 1024) { // 10MB hard limit
+      throw new Error('Request payload too large');
+    }
+  }
+}));
+
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: requestSizeLimit 
+}));
+
+// Rate limiting - consistent across environments
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: NODE_ENV === 'production' ? 100 : 1000, // requests per window
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes default
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'), // Consistent limit
   message: {
     error: 'Too many requests from this IP, please try again later',
     retryAfter: '15 minutes'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  // Add IP-based tracking for better security
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || req.socket.remoteAddress || 'unknown';
+  },
+  // Skip rate limiting for health checks
+  skip: (req) => {
+    return req.path === '/health' || req.path === '/health/';
+  },
+  // Add custom handler for rate limit exceeded
+  handler: (req, res) => {
+    console.warn('Rate limit exceeded', {
+      ip: req.ip,
+      path: req.path,
+      userAgent: req.get('User-Agent'),
+      timestamp: new Date().toISOString()
+    });
+    
+    res.status(429).json({
+      error: 'Too many requests from this IP, please try again later',
+      retryAfter: '15 minutes',
+      code: 'RATE_LIMIT_EXCEEDED'
+    });
+  }
 });
 app.use('/api', limiter);
 

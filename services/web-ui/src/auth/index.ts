@@ -7,10 +7,18 @@ import { logger } from '../utils/logger';
  * Configures Passport.js strategies for authentication
  */
 export function setupAuthentication(passportInstance: typeof passport): void {
+  // Validate JWT secret configuration
+  const jwtSecret = process.env.JWT_SECRET;
+  const fallbackSecret = 'dev-secret-change-in-production';
+  
+  if (!jwtSecret) {
+    console.warn('WARNING: JWT_SECRET not set, using fallback secret. This is insecure for production!');
+  }
+
   // JWT Strategy configuration
   const jwtOptions = {
     jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-    secretOrKey: process.env.JWT_SECRET || 'dev-secret-change-in-production',
+    secretOrKey: jwtSecret || fallbackSecret, // Use fallback only if not set
     issuer: process.env.JWT_ISSUER || 'ai-compliance-shepherd',
     audience: process.env.JWT_AUDIENCE || 'web-ui'
   };

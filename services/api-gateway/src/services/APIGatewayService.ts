@@ -102,9 +102,35 @@ export class APIGatewayService {
    * Get CORS headers for response
    */
   getCorsHeaders(event: APIGatewayProxyEvent): Record<string, string> {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
+    // Default allowed origins - prioritize production domains
+    const defaultOrigins = [
+      'https://demo.cloudaimldevops.com',
+      'https://www.cloudaimldevops.com',
+      'http://localhost:3001', // Keep for development
+      'http://localhost:3000'  // Keep for development
+    ];
+    
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || defaultOrigins;
     const origin = event.headers.Origin || event.headers.origin;
-    const allowedOrigin = allowedOrigins.includes('*') || allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+    
+    // Validate origin against allowed list
+    let allowedOrigin = allowedOrigins[0]; // Default to first allowed origin
+    
+    if (allowedOrigins.includes('*')) {
+      // Legacy support - log warning but allow
+      console.warn('WARNING: CORS configured to allow all origins (*) - this is insecure for production');
+      allowedOrigin = origin || '*';
+    } else if (allowedOrigins.includes(origin)) {
+      allowedOrigin = origin;
+    } else if (origin) {
+      // Log suspicious origins for security monitoring
+      console.warn('SECURITY: Blocked CORS request from unauthorized origin', {
+        origin,
+        allowedOrigins,
+        userAgent: event.headers['User-Agent'],
+        sourceIp: event.requestContext?.identity?.sourceIp
+      });
+    }
 
     return {
       'Content-Type': 'application/json',
